@@ -97,7 +97,7 @@ export const INITIAL_PENDING_ORDERS = [
     dropoff_location: {
       latitude: 18.5018,
       longitude: 73.8636,
-      address: "Kothrud, Pune"
+      address: "Kothrud Central Kitchen, Pune"
     },
     pickups: [
       {
@@ -122,6 +122,32 @@ export const INITIAL_PENDING_ORDERS = [
     total_quantity_kg: 800,
     total_amount: 16000.00,
     logistics_fee: 1200.00,
+    status: "PENDING_DISPATCH",
+    payment_status: "ESCROW_LOCKED"
+  },
+  {
+    order_id: "ord_7702",
+    buyer_id: "b_502",
+    buyer_name: "Swarna Bhawan Hostel Mess",
+    dropoff_location: {
+      latitude: 18.5089,
+      longitude: 73.9260,
+      address: "Hadapsar Magarpatta Hub, Pune"
+    },
+    pickups: [
+      {
+        lot_id: "lot_903",
+        farmer_name: "Kisan Cooperative #4",
+        crop_name: "Onion (Grade A)",
+        quantity_kg: 750,
+        latitude: 18.2890,
+        longitude: 74.0520,
+        area_name: "Jejuri Agri Cluster"
+      }
+    ],
+    total_quantity_kg: 750,
+    total_amount: 22500.00,
+    logistics_fee: 1100.00,
     status: "PENDING_DISPATCH",
     payment_status: "ESCROW_LOCKED"
   }

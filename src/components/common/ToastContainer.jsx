@@ -27,46 +27,46 @@ export default function ToastContainer() {
           <div
             key={toast.id}
             role="alert"
-            className={`p-3.5 rounded-2xl border backdrop-blur-xl shadow-2xl flex items-start gap-3 text-xs pointer-events-auto transition-all transform animate-slide-up duration-200 ${
+            className={`p-4 rounded-2xl border bg-white shadow-xl flex items-start gap-3 text-xs pointer-events-auto transition-all transform animate-slide-up duration-200 ${
               isSuccess
-                ? 'bg-slate-900/95 border-emerald-500/60 text-emerald-300 shadow-emerald-950/40'
+                ? 'border-emerald-300 shadow-emerald-500/10'
                 : isError
-                ? 'bg-slate-900/95 border-red-500/60 text-red-300 shadow-red-950/40'
+                ? 'border-red-300 shadow-red-500/10'
                 : isWarning
-                ? 'bg-slate-900/95 border-amber-500/60 text-amber-300 shadow-amber-950/40'
-                : 'bg-slate-900/95 border-sky-500/60 text-sky-300 shadow-sky-950/40'
+                ? 'border-amber-300 shadow-amber-500/10'
+                : 'border-blue-300 shadow-blue-500/10'
             }`}
           >
             {isSuccess ? (
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <div className="w-7 h-7 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0 text-brand-600">
+                <CheckCircle2 className="w-4 h-4" />
               </div>
             ) : isError ? (
-              <div className="w-6 h-6 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                <AlertCircle className="w-4 h-4 text-red-400" />
+              <div className="w-7 h-7 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center shrink-0 text-red-600">
+                <AlertCircle className="w-4 h-4" />
               </div>
             ) : isWarning ? (
-              <div className="w-6 h-6 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <div className="w-7 h-7 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0 text-amber-600">
+                <AlertTriangle className="w-4 h-4" />
               </div>
             ) : (
-              <div className="w-6 h-6 rounded-lg bg-sky-500/20 flex items-center justify-center shrink-0 mt-0.5">
-                <Info className="w-4 h-4 text-sky-400" />
+              <div className="w-7 h-7 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center shrink-0 text-blue-600">
+                <Info className="w-4 h-4" />
               </div>
             )}
 
             <div className="flex-1 pt-0.5">
-              <div className="font-semibold text-white leading-snug">
-                {isSuccess ? 'Success' : isError ? 'Error Notification' : isWarning ? 'Warning' : 'System Update'}
+              <div className="font-bold text-slate-900 leading-snug">
+                {isSuccess ? 'Success' : isError ? 'Error Notification' : isWarning ? 'Warning' : 'Notification'}
               </div>
-              <p className="leading-snug text-slate-300 text-[11px] mt-0.5">
+              <p className="leading-snug text-slate-600 text-[11px] mt-0.5">
                 {toast.message}
               </p>
             </div>
 
             <button
               onClick={() => removeToast(toast.id)}
-              className="text-slate-500 hover:text-slate-200 transition-colors p-1 -mr-1 rounded-lg hover:bg-slate-800"
+              className="text-slate-400 hover:text-slate-700 transition-colors p-1 -mr-1 rounded-lg hover:bg-slate-100 cursor-pointer"
               title="Dismiss alert"
             >
               <X className="w-3.5 h-3.5" />

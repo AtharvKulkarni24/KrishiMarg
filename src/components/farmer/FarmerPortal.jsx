@@ -32,7 +32,7 @@ import {
 } from 'recharts';
 
 export default function FarmerPortal() {
-  const { addProduceLot, availableLots, setDemoStep, addToast } = useApp();
+  const { addProduceLot, availableLots, setDemoStep, addToast, t } = useApp();
 
   // Form State
   const [formData, setFormData] = useState({
@@ -81,7 +81,7 @@ export default function FarmerPortal() {
         const data = await apiClient.getPriceForecast(formData.crop_name);
         setForecastData(data);
       } catch (err) {
-        addToast(`Failed to load AI price forecast: ${err.message}`, 'error');
+        addToast(t('toast_forecast_error', { err: err.message }), 'error');
       } finally {
         setIsLoadingForecast(false);
       }
@@ -92,16 +92,16 @@ export default function FarmerPortal() {
   const validateForm = () => {
     const errors = {};
     if (!formData.quantity_kg || Number(formData.quantity_kg) < 50) {
-      errors.quantity_kg = 'Minimum batch volume must be at least 50 kg for bulk logistics.';
+      errors.quantity_kg = t('err_min_volume');
     }
     if (!formData.harvest_date) {
-      errors.harvest_date = 'Please specify an expected harvest date.';
+      errors.harvest_date = t('err_harvest_date');
     }
     if (!formData.latitude || formData.latitude < 8 || formData.latitude > 37) {
-      errors.latitude = 'Latitude must be a valid coordinate in India (8.0 to 37.0).';
+      errors.latitude = t('err_latitude');
     }
     if (!formData.longitude || formData.longitude < 68 || formData.longitude > 98) {
-      errors.longitude = 'Longitude must be a valid coordinate in India (68.0 to 98.0).';
+      errors.longitude = t('err_longitude');
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -110,7 +110,7 @@ export default function FarmerPortal() {
   const handleSubmitListing = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
-      addToast('Please correct the highlighted form errors before submitting.', 'error');
+      addToast(t('err_form_fix'), 'error');
       return;
     }
 
@@ -135,7 +135,7 @@ export default function FarmerPortal() {
       addProduceLot({ ...payload, ...result });
       setDemoStep(2); // Advance demo pitch step to Buyer
     } catch (err) {
-      addToast(`Error listing produce: ${err.message}`, 'error');
+      addToast(t('toast_listing_error', { err: err.message }), 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -147,57 +147,59 @@ export default function FarmerPortal() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
       
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl glass-panel border border-slate-800">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl bg-white border border-emerald-900/10 shadow-sm">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="p-1.5 rounded-lg bg-brand-500/20 text-brand-400">
+            <span className="p-2 rounded-xl bg-emerald-50 text-brand-600 border border-emerald-200">
               <Sprout className="w-5 h-5" />
             </span>
-            <h2 className="text-xl font-bold font-heading text-white">Farmer & FPO Supply Portal</h2>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30">
-              Producer ID: f_101
+            <h2 className="text-xl font-bold font-heading text-emerald-950">
+              {t('farmer_portal_title')}
+            </h2>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200">
+              {t('farmer_producer_id')}
             </span>
           </div>
-          <p className="text-slate-400 text-xs md:text-sm">
-            List your harvest with Agmark grading, lock in guaranteed fair-price realization (+15-20%), and utilize AI time-series harvest guidance.
+          <p className="text-slate-600 text-xs md:text-sm">
+            {t('farmer_portal_sub')}
           </p>
         </div>
 
         {/* Quick Stat Pill */}
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-900/90 border border-brand-500/30">
-          <div className="w-8 h-8 rounded-lg bg-brand-500/20 flex items-center justify-center text-brand-400">
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200">
+          <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-brand-700">
             <Scale className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[11px] text-slate-400">Guaranteed Premium</div>
-            <div className="text-sm font-bold text-brand-300">+20% over Mandi</div>
+            <div className="text-[11px] text-emerald-900/70 font-medium">{t('farmer_guaranteed_badge_label')}</div>
+            <div className="text-sm font-extrabold text-brand-700">{t('farmer_guaranteed_badge_val')}</div>
           </div>
         </div>
       </div>
 
-      {/* Grid: Form (Left) & USP Insights (Right) */}
+      {/* Grid: Form (Left) & Insights (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Left Column: Produce Listing Form (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="p-6 rounded-2xl glass-panel border border-slate-800 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 gap-3">
+          <div className="p-6 rounded-2xl bg-white border border-emerald-900/10 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <span>List New Produce Lot</span>
-                  <span className="text-xs font-normal text-slate-400">(नया उत्पाद दर्ज करें)</span>
+                <h3 className="text-base font-bold text-emerald-950 flex items-center gap-2">
+                  <span>{t('farmer_form_title')}</span>
+                  <span className="text-xs font-normal text-slate-500">{t('farmer_form_sub_title')}</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">Enter harvest details to calculate dynamic Fair-Price Corridor</p>
+                <p className="text-xs text-slate-500 mt-0.5">{t('farmer_form_desc')}</p>
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-slate-300 font-medium cursor-pointer flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 border border-slate-700/80 hover:border-brand-500/40 transition-colors">
+                <label className="text-xs text-slate-700 font-medium cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50/70 border border-emerald-200 hover:border-brand-500 transition-colors">
                   <input
                     type="checkbox"
                     checked={formData.is_fpo}
                     onChange={(e) => setFormData(prev => ({ ...prev, is_fpo: e.target.checked }))}
-                    className="w-4 h-4 rounded text-brand-600 bg-slate-900 border-slate-700 focus:ring-brand-500 cursor-pointer"
+                    className="w-4 h-4 rounded text-brand-600 border-slate-300 focus:ring-brand-500 cursor-pointer"
                   />
-                  <span>FPO Lot Aggregation</span>
+                  <span className="text-emerald-950 font-semibold">{t('farmer_fpo_toggle')}</span>
                 </label>
               </div>
             </div>
@@ -207,25 +209,25 @@ export default function FarmerPortal() {
               {/* Crop Selection & Quantity */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Crop Commodity <span className="text-red-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {t('farmer_crop_label')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.crop_name}
                     onChange={(e) => setFormData(prev => ({ ...prev, crop_name: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-sm focus:outline-none focus:border-brand-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-sm focus:outline-none focus:border-brand-500 focus:bg-white focus:ring-1 focus:ring-brand-500 transition-colors"
                   >
-                    <option value="Tomato">Tomato (टमाटर) - Pune Mandi Standard</option>
-                    <option value="Onion">Onion (प्याज़) - Lasalgaon APMC Standard</option>
-                    <option value="Potato">Potato (आलू) - Manchar Wholesale</option>
-                    <option value="Cauliflower">Cauliflower (गोभी) - Junnar Fresh</option>
-                    <option value="Green Chili">Green Chili (हरी मिर्च) - Saswad Special</option>
+                    <option value="Tomato">{t('crop_tomato_detail')}</option>
+                    <option value="Onion">{t('crop_onion_detail')}</option>
+                    <option value="Potato">{t('crop_potato_detail')}</option>
+                    <option value="Cauliflower">{t('crop_cauliflower_detail')}</option>
+                    <option value="Green Chili">{t('crop_chili_detail')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Harvest Quantity (kg) <span className="text-red-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {t('farmer_quantity_label')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -236,13 +238,14 @@ export default function FarmerPortal() {
                       setFormData(prev => ({ ...prev, quantity_kg: e.target.value }));
                       if (formErrors.quantity_kg) setFormErrors(prev => ({ ...prev, quantity_kg: null }));
                     }}
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border text-white text-sm focus:outline-none font-mono ${
-                      formErrors.quantity_kg ? 'border-red-500 focus:border-red-400' : 'border-slate-700 focus:border-brand-500'
+                    placeholder={t('farmer_quantity_placeholder')}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border text-slate-800 text-sm focus:outline-none focus:bg-white transition-colors font-mono ${
+                      formErrors.quantity_kg ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                     }`}
                     required
                   />
                   {formErrors.quantity_kg && (
-                    <p className="text-[11px] text-red-400 mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-red-500 mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       <span>{formErrors.quantity_kg}</span>
                     </p>
@@ -253,23 +256,23 @@ export default function FarmerPortal() {
               {/* Agmark Quality Grade & Harvest Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Agmark Quality Grade <span className="text-red-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {t('farmer_grade_label')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.quality_grade}
                     onChange={(e) => setFormData(prev => ({ ...prev, quality_grade: e.target.value }))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-sm focus:outline-none focus:border-brand-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-sm focus:outline-none focus:border-brand-500 focus:bg-white focus:ring-1 focus:ring-brand-500 transition-colors"
                   >
-                    <option value="A">Grade A (Premium / Table Purpose)</option>
-                    <option value="B">Grade B (Standard Commercial Grade)</option>
-                    <option value="C">Grade C (Processing / Puree / Juice)</option>
+                    <option value="A">{t('grade_a')}</option>
+                    <option value="B">{t('grade_b')}</option>
+                    <option value="C">{t('grade_c')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Expected Harvest Date <span className="text-red-400">*</span>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    {t('farmer_date_label')} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -278,13 +281,13 @@ export default function FarmerPortal() {
                       setFormData(prev => ({ ...prev, harvest_date: e.target.value }));
                       if (formErrors.harvest_date) setFormErrors(prev => ({ ...prev, harvest_date: null }));
                     }}
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border text-white text-sm focus:outline-none ${
-                      formErrors.harvest_date ? 'border-red-500 focus:border-red-400' : 'border-slate-700 focus:border-brand-500'
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border text-slate-800 text-sm focus:outline-none focus:bg-white transition-colors ${
+                      formErrors.harvest_date ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
                     }`}
                     required
                   />
                   {formErrors.harvest_date && (
-                    <p className="text-[11px] text-red-400 mt-1 flex items-center gap-1">
+                    <p className="text-[11px] text-red-500 mt-1 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       <span>{formErrors.harvest_date}</span>
                     </p>
@@ -295,97 +298,103 @@ export default function FarmerPortal() {
               {/* Farm Location Preset (Pune/Saswad coordinates) */}
               <div>
                 <div className="flex flex-wrap items-center justify-between mb-1.5 gap-2">
-                  <label className="text-xs font-semibold text-slate-300">
-                    Farm Location Coordinates (PostGIS Point)
+                  <label className="text-xs font-semibold text-slate-700">
+                    {t('farmer_location_label')}
                   </label>
                   <div className="flex gap-1.5">
                     <button
                       type="button"
                       onClick={() => handleLocationPreset('saswad')}
-                      className={`text-[10px] px-2.5 py-1 rounded-lg transition-colors ${
-                        formData.area_preset === 'saswad' ? 'bg-brand-600 text-white font-bold' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      className={`text-[11px] px-3 py-1 rounded-lg transition-colors cursor-pointer ${
+                        formData.area_preset === 'saswad' 
+                          ? 'bg-brand-500 text-white font-bold shadow-xs' 
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      Saswad Cluster
+                      {t('farmer_preset_saswad')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleLocationPreset('purandar')}
-                      className={`text-[10px] px-2.5 py-1 rounded-lg transition-colors ${
-                        formData.area_preset === 'purandar' ? 'bg-brand-600 text-white font-bold' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      className={`text-[11px] px-3 py-1 rounded-lg transition-colors cursor-pointer ${
+                        formData.area_preset === 'purandar' 
+                          ? 'bg-brand-500 text-white font-bold shadow-xs' 
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      Purandar Valley
+                      {t('farmer_preset_purandar')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleLocationPreset('jejuri')}
-                      className={`text-[10px] px-2.5 py-1 rounded-lg transition-colors ${
-                        formData.area_preset === 'jejuri' ? 'bg-brand-600 text-white font-bold' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      className={`text-[11px] px-3 py-1 rounded-lg transition-colors cursor-pointer ${
+                        formData.area_preset === 'jejuri' 
+                          ? 'bg-brand-500 text-white font-bold shadow-xs' 
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      Jejuri Hub
+                      {t('farmer_preset_jejuri')}
                     </button>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-xs text-slate-500">Lat:</span>
+                    <span className="absolute left-3 top-2.5 text-xs text-slate-500 font-medium">{t('farmer_lat_label')}</span>
                     <input
                       type="number"
                       step="0.0001"
                       value={formData.latitude}
                       onChange={(e) => setFormData(prev => ({ ...prev, latitude: e.target.value }))}
-                      className="w-full pl-10 pr-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-mono focus:border-brand-500 focus:outline-none"
+                      className="w-full pl-12 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-mono focus:border-brand-500 focus:bg-white focus:outline-none"
                     />
                   </div>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-xs text-slate-500">Lon:</span>
+                    <span className="absolute left-3 top-2.5 text-xs text-slate-500 font-medium">{t('farmer_lon_label')}</span>
                     <input
                       type="number"
                       step="0.0001"
                       value={formData.longitude}
                       onChange={(e) => setFormData(prev => ({ ...prev, longitude: e.target.value }))}
-                      className="w-full pl-10 pr-3 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-mono focus:border-brand-500 focus:outline-none"
+                      className="w-full pl-12 pr-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 text-xs font-mono focus:border-brand-500 focus:bg-white focus:outline-none"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* USP 1: Fair-Price Corridor Dynamic Card (No Purple Gradients!) */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-slate-900 border border-emerald-500/40 space-y-3">
+              {/* USP 1: Fair-Price Corridor Dynamic Card */}
+              <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-300 space-y-3">
                 <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                    <Sparkles className="w-4 h-4" />
-                    <span>USP 1: Fair-Price Corridor Calculation</span>
+                  <div className="flex items-center gap-1.5 text-brand-700 font-bold">
+                    <Sparkles className="w-4 h-4 text-brand-600" />
+                    <span>{t('farmer_usp1_title')}</span>
                   </div>
-                  <span className="text-[11px] text-slate-400">Live APMC Mandi Benchmark</span>
+                  <span className="text-[11px] text-emerald-800 font-medium">{t('farmer_usp1_sub')}</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center pt-1">
-                  <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                    <div className="text-[10px] text-slate-400 uppercase">Mandi Rate</div>
-                    <div className="text-sm font-bold text-slate-300 mt-0.5 line-through decoration-red-400">
+                  <div className="p-2.5 rounded-xl bg-white border border-emerald-200/80 shadow-xs">
+                    <div className="text-[10px] text-slate-500 font-semibold uppercase">{t('farmer_mandi_rate')}</div>
+                    <div className="text-sm font-bold text-slate-400 mt-0.5 line-through decoration-red-400">
                       ₹{benchmark.mandi_price.toFixed(2)}/kg
                     </div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-emerald-900/40 border border-emerald-500/50">
-                    <div className="text-[10px] text-emerald-300 font-semibold uppercase">Your Payout (+20%)</div>
-                    <div className="text-base font-extrabold text-emerald-300 mt-0.5">
+                  <div className="p-2.5 rounded-xl bg-emerald-600 text-white shadow-md shadow-emerald-600/20">
+                    <div className="text-[10px] text-emerald-100 font-bold uppercase">{t('farmer_your_payout')}</div>
+                    <div className="text-base font-extrabold text-white mt-0.5">
                       ₹{benchmark.fair_payout.toFixed(2)}/kg
                     </div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800">
-                    <div className="text-[10px] text-slate-400 uppercase">Retail Store Ref</div>
-                    <div className="text-sm font-bold text-amber-400 mt-0.5">
+                  <div className="p-2.5 rounded-xl bg-white border border-emerald-200/80 shadow-xs">
+                    <div className="text-[10px] text-slate-500 font-semibold uppercase">{t('farmer_retail_ref')}</div>
+                    <div className="text-sm font-bold text-amber-700 mt-0.5">
                       ₹{benchmark.retail_price.toFixed(2)}/kg
                     </div>
                   </div>
                 </div>
 
-                <div className="text-xs text-emerald-400/90 flex items-center justify-between pt-1 border-t border-emerald-500/20">
-                  <span>Additional Net Earnings on this Lot:</span>
-                  <span className="font-bold text-emerald-300">+₹{extraFarmerEarnings} (Direct Benefit)</span>
+                <div className="text-xs text-emerald-950 flex items-center justify-between pt-1 border-t border-emerald-200 font-medium">
+                  <span>{t('farmer_extra_earnings')}</span>
+                  <span className="font-bold text-brand-700 text-sm">+₹{extraFarmerEarnings} ({t('farmer_direct_benefit')})</span>
                 </div>
               </div>
 
@@ -393,16 +402,16 @@ export default function FarmerPortal() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-500 hover:from-brand-500 hover:to-emerald-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-brand-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3.5 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition-all shadow-md shadow-brand-500/20 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-98"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                    <span>Listing Produce Lot...</span>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>{t('farmer_btn_submitting')}</span>
                   </span>
                 ) : (
                   <>
-                    <span>Submit Listing & Lock Fair-Price</span>
+                    <span>{t('farmer_btn_submit')}</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -412,17 +421,21 @@ export default function FarmerPortal() {
 
           {/* Submission Success Confirmation Banner */}
           {submissionResult && (
-            <div className="p-4 rounded-2xl bg-brand-950/90 border border-brand-500/60 flex items-start gap-3 animate-fade-in">
-              <CheckCircle2 className="w-5 h-5 text-brand-400 shrink-0 mt-0.5" />
-              <div className="flex-1 text-xs space-y-1">
-                <div className="font-bold text-white flex items-center gap-2">
-                  <span>Lot #{submissionResult.lot_id} Successfully Listed!</span>
-                  <span className="px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 font-mono text-[10px]">
-                    Status: {submissionResult.status}
+            <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-300 flex items-start gap-3.5 animate-fade-in shadow-sm">
+              <CheckCircle2 className="w-6 h-6 text-brand-600 shrink-0 mt-0.5" />
+              <div className="flex-1 text-xs space-y-1.5">
+                <div className="font-bold text-emerald-950 flex items-center gap-2">
+                  <span>{t('farmer_success_title', { lot_id: submissionResult.lot_id })}</span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-200/80 text-emerald-900 font-mono text-[10px] font-bold">
+                    {submissionResult.status}
                   </span>
                 </div>
-                <p className="text-slate-300">
-                  Your lot of <strong>{submissionResult.quantity_kg} kg {submissionResult.crop_name}</strong> is now active on the 50km buyer marketplace with a guaranteed payout of <strong>₹{submissionResult.guaranteed_payout.toFixed(2)}/kg</strong>.
+                <p className="text-emerald-900 leading-relaxed">
+                  {t('farmer_success_desc', {
+                    qty: submissionResult.quantity_kg,
+                    crop: submissionResult.crop_name,
+                    payout: submissionResult.guaranteed_payout.toFixed(2)
+                  })}
                 </p>
               </div>
             </div>
@@ -433,19 +446,19 @@ export default function FarmerPortal() {
         <div className="lg:col-span-5 space-y-6">
           
           {/* AI Smart Advisory Card */}
-          <div className="p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
+          <div className="p-6 rounded-2xl bg-white border border-emerald-900/10 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-400">
-                  <TrendingUp className="w-4 h-4" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
+                  <TrendingUp className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">AI Demand & Price Forecast</h3>
-                  <p className="text-[11px] text-slate-400">Facebook Prophet Time-Series ML</p>
+                  <h3 className="text-sm font-bold text-emerald-950">{t('farmer_ai_forecast_title')}</h3>
+                  <p className="text-[11px] text-slate-500">{t('farmer_ai_forecast_sub')}</p>
                 </div>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-amber-500/30">
-                7-Day Horizon
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+                {t('farmer_7day_horizon')}
               </span>
             </div>
 
@@ -454,28 +467,28 @@ export default function FarmerPortal() {
               {isLoadingForecast ? (
                 <div className="h-full flex items-center justify-center text-xs text-slate-500 space-y-2 flex-col">
                   <div className="w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-                  <span>Loading Prophet forecast curve...</span>
+                  <span>{t('farmer_loading_forecast')}</span>
                 </div>
               ) : forecastData?.forecast_trend ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={forecastData.forecast_trend}>
                     <defs>
                       <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.0}/>
+                        <stop offset="5%" stopColor="#0caf3d" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#0caf3d" stopOpacity={0.0}/>
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} />
-                    <YAxis domain={['dataMin - 1', 'dataMax + 1']} stroke="#64748b" tick={{ fontSize: 10 }} unit="₹" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="date" stroke="#94a3b8" tick={{ fontSize: 10 }} />
+                    <YAxis domain={['dataMin - 1', 'dataMax + 1']} stroke="#94a3b8" tick={{ fontSize: 10 }} unit="₹" />
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '12px' }}
-                      formatter={(val) => [`₹${val.toFixed(2)}/kg`, 'Predicted Price']}
+                      contentStyle={{ backgroundColor: '#ffffff', borderColor: '#bbf7d0', borderRadius: '12px', fontSize: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                      formatter={(val) => [`₹${val.toFixed(2)}/kg`, t('farmer_predicted_price')]}
                     />
                     <Area 
                       type="monotone" 
                       dataKey="price" 
-                      stroke="#10b981" 
+                      stroke="#0caf3d" 
                       strokeWidth={2.5}
                       fillOpacity={1} 
                       fill="url(#priceGradient)" 
@@ -483,41 +496,41 @@ export default function FarmerPortal() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-xs text-slate-500">
-                  No forecast data available for {formData.crop_name}.
+                <div className="h-full flex items-center justify-center text-xs text-slate-400">
+                  {t('farmer_no_forecast', { crop: formData.crop_name })}
                 </div>
               )}
             </div>
 
             {/* Rule-Based Deterministic Advisory Banner */}
-            <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-xs text-amber-200 space-y-1.5">
-              <div className="flex items-center gap-1.5 font-bold text-amber-300">
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                <span>Harvest Advisory Rule</span>
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                <Sparkles className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>{t('farmer_advisory_title')}</span>
               </div>
-              <p className="text-[11px] leading-relaxed text-amber-100/90">
+              <p className="text-[11px] leading-relaxed text-amber-900">
                 {forecastData?.advisory_text || "Market demand is peaking next week in the Pune HoReCa belt. Delay harvest by 2 days for higher profit margins."}
               </p>
             </div>
           </div>
 
           {/* Active Farmer Lots in Region */}
-          <div className="p-6 rounded-2xl glass-panel border border-slate-800 space-y-3">
+          <div className="p-6 rounded-2xl bg-white border border-emerald-900/10 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-brand-400" />
-                <span>Active Region Lots</span>
+              <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-brand-600" />
+                <span>{t('farmer_active_lots_title')}</span>
               </h3>
-              <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
-                {availableLots.length} Active
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-semibold border border-emerald-200">
+                {t('farmer_active_count', { count: availableLots.length })}
               </span>
             </div>
 
             {availableLots.length === 0 ? (
               <EmptyState
                 icon={PackageOpen}
-                title="No Lots Listed Yet"
-                description="Use the form to list your first farm harvest with guaranteed Fair-Price."
+                title={t('farmer_no_lots_title')}
+                description={t('farmer_no_lots_desc')}
                 className="py-6 border-0 bg-transparent"
               />
             ) : (
@@ -525,22 +538,24 @@ export default function FarmerPortal() {
                 {availableLots.map((lot) => (
                   <div 
                     key={lot.lot_id}
-                    className="p-3 rounded-xl bg-slate-900/70 border border-slate-800 hover:border-slate-700 flex items-center justify-between text-xs transition-colors"
+                    className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-brand-500/40 flex items-center justify-between text-xs transition-colors"
                   >
                     <div>
-                      <div className="font-semibold text-white flex items-center gap-1.5">
+                      <div className="font-bold text-emerald-950 flex items-center gap-1.5">
                         <span>{lot.crop_name}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-white text-emerald-800 border border-emerald-200 font-medium">
                           {lot.quality_grade ? `Grade ${lot.quality_grade}` : 'Grade A'}
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
+                      <div className="text-[11px] text-slate-500 mt-0.5 font-medium">
                         {lot.quantity_kg} kg • {lot.location?.area_name || 'Saswad Hub'}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-emerald-400 font-mono">₹{lot.price_per_kg?.toFixed(2) || '20.00'}/kg</div>
-                      <span className="text-[10px] text-brand-400/80">Active</span>
+                      <div className="font-extrabold text-brand-700 font-mono">₹{lot.price_per_kg?.toFixed(2) || '20.00'}/kg</div>
+                      <span className="text-[10px] font-bold text-brand-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                        {t('farmer_lot_status_active')}
+                      </span>
                     </div>
                   </div>
                 ))}

@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
+import { apiClient } from '../../services/api';
 import EmptyState from '../common/EmptyState';
 import { 
-  Truck, 
+  ShieldCheck, 
   Compass, 
   MapPin, 
   CheckCircle2, 
@@ -11,47 +12,70 @@ import {
   Fuel, 
   Clock, 
   Radio, 
-  UserCheck, 
+  RotateCw, 
   Sparkles,
   ArrowRight,
-  ShieldCheck,
-  RotateCw,
-  PackageOpen
+  PackageOpen,
+  Send,
+  AlertCircle,
+  Truck,
+  Building2,
+  Navigation
 } from 'lucide-react';
 import L from 'leaflet';
 
 export default function AdminLogisticsMap() {
   const { 
-    pendingOrders, 
     activeRoute, 
+    runRouteOptimization, 
     isOptimizing, 
-    runRouteOptimization,
+    broadcastToDrivers, 
     isDispatching,
-    broadcastToDrivers,
     dispatchedDriver,
-    setDemoStep,
-    addToast
+    selectRole,
+    addToast,
+    t 
   } = useApp();
 
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layerGroupRef = useRef(null);
 
-  const [selectedOrder, setSelectedOrder] = useState(pendingOrders[0] || null);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [selectedOrderId, setSelectedOrderId] = useState('ord_7701');
+  const [isLoadingOrders, setIsLoadingOrders] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
-  // Keep selected order in sync if pendingOrders change
-  useEffect(() => {
-    if (!selectedOrder && pendingOrders.length > 0) {
-      setSelectedOrder(pendingOrders[0]);
+  // 1. Fetch pending orders dynamically from GET /api/v1/admin/pending-orders on load
+  const loadPendingOrders = useCallback(async () => {
+    setIsLoadingOrders(true);
+    setFetchError(null);
+    try {
+      const data = await apiClient.getPendingOrders();
+      const orders = data?.pending_orders || [];
+      setPendingOrders(orders);
+      if (orders.length > 0 && !selectedOrderId) {
+        setSelectedOrderId(orders[0].order_id);
+      }
+    } catch (err) {
+      setFetchError(err.message || 'Failed to load pending orders from Java API.');
+      addToast(`Error loading orders: ${err.message}`, 'error');
+    } finally {
+      setIsLoadingOrders(false);
     }
-  }, [pendingOrders, selectedOrder]);
+  }, [selectedOrderId, addToast]);
 
-  // Initialize Leaflet Map
+  useEffect(() => {
+    loadPendingOrders();
+  }, [loadPendingOrders]);
+
+  const currentOrder = pendingOrders.find(o => o.order_id === selectedOrderId) || pendingOrders[0] || null;
+
+  // 2. Initialize Leaflet Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     if (!mapInstanceRef.current) {
-      // Center near Pune / Saswad region
       const map = L.map(mapContainerRef.current, {
         center: [18.42, 73.94],
         zoom: 11,
@@ -66,16 +90,14 @@ export default function AdminLogisticsMap() {
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
 
-      // Invalidate map size after short delay to prevent grey tiles on render
       setTimeout(() => {
         if (mapInstanceRef.current) {
           mapInstanceRef.current.invalidateSize();
         }
-      }, 250);
+      }, 300);
     }
 
     return () => {
-      // Clean up map on unmount
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -83,68 +105,91 @@ export default function AdminLogisticsMap() {
     };
   }, []);
 
-  // Update Markers & Polyline Route whenever activeRoute or selectedOrder changes
+  // 3. Render 🟢 GREEN Farm Markers, 🔴 RED Buyer Dropoff, and 🔵 Route Polyline
   useEffect(() => {
     if (!mapInstanceRef.current || !layerGroupRef.current) return;
 
     const layerGroup = layerGroupRef.current;
     layerGroup.clearLayers();
+    const bounds = [];
 
-    // 1. Plot Farm Pickups (Green Pins)
-    if (selectedOrder?.pickups) {
-      selectedOrder.pickups.forEach((pickup, idx) => {
-        const farmIcon = L.divIcon({
-          className: 'custom-farm-marker',
-          html: `
-            <div style="background: #16a34a; color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid #fff; box-shadow: 0 0 15px rgba(22, 163, 74, 0.6);">
-              P${idx + 1}
+    // Render all pending orders or selected order
+    const ordersToRender = currentOrder ? [currentOrder] : pendingOrders;
+
+    ordersToRender.forEach((order) => {
+      // 🟢 Farm / Pickup Locations (Green Markers)
+      if (order.pickups && order.pickups.length > 0) {
+        order.pickups.forEach((pickup, idx) => {
+          const lat = Number(pickup.latitude);
+          const lon = Number(pickup.longitude);
+          if (isNaN(lat) || isNaN(lon)) return;
+
+          bounds.push([lat, lon]);
+
+          const farmIcon = L.divIcon({
+            className: 'custom-farm-marker',
+            html: `
+              <div style="background: #0caf3d; color: #ffffff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; border: 2.5px solid #ffffff; box-shadow: 0 4px 12px rgba(12, 175, 61, 0.45); cursor: pointer;">
+                P${idx + 1}
+              </div>
+            `,
+            iconSize: [34, 34],
+            iconAnchor: [17, 17]
+          });
+
+          const popupContent = `
+            <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
+              <strong style="color: #0caf3d; font-size: 13px;">🟢 Farm Pickup #${idx + 1}</strong><br/>
+              <strong>Lot ID:</strong> <span style="font-family: monospace; font-weight: bold;">${pickup.lot_id}</span><br/>
+              ${pickup.farmer_name ? `<strong>Farmer:</strong> ${pickup.farmer_name}<br/>` : ''}
+              ${pickup.crop_name ? `<strong>Crop:</strong> ${pickup.crop_name} (${pickup.quantity_kg || 0} kg)<br/>` : ''}
+              <span style="color: #64748b; font-size: 11px;">📍 Coordinates: ${lat.toFixed(4)}, ${lon.toFixed(4)}</span>
             </div>
-          `,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16]
+          `;
+
+          const marker = L.marker([lat, lon], { icon: farmIcon }).bindPopup(popupContent);
+          layerGroup.addLayer(marker);
         });
+      }
 
-        const marker = L.marker([pickup.latitude, pickup.longitude], { icon: farmIcon })
-          .bindPopup(`
-            <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4;">
-              <strong style="color: #4ade80;">Farm Pickup #${idx + 1}</strong><br/>
-              <strong>${pickup.farmer_name || 'Ramesh Patil'}</strong><br/>
-              ${pickup.crop_name || 'Tomato'} (${pickup.quantity_kg} kg)<br/>
-              <em>${pickup.area_name || 'Saswad Cluster'}</em>
+      // 🔴 Buyer / Drop-off Location (Red Marker)
+      if (order.dropoff_location) {
+        const lat = Number(order.dropoff_location.latitude);
+        const lon = Number(order.dropoff_location.longitude);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          bounds.push([lat, lon]);
+
+          const dropIcon = L.divIcon({
+            className: 'custom-drop-marker',
+            html: `
+              <div style="background: #e11d48; color: #ffffff; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; border: 2.5px solid #ffffff; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.45); cursor: pointer;">
+                D
+              </div>
+            `,
+            iconSize: [34, 34],
+            iconAnchor: [17, 17]
+          });
+
+          const popupContent = `
+            <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
+              <strong style="color: #e11d48; font-size: 13px;">🔴 Buyer Drop-off (Delivery)</strong><br/>
+              <strong>Buyer:</strong> ${order.buyer_name || 'Green Leaf Restaurant'}<br/>
+              <strong>Order ID:</strong> <span style="font-family: monospace; font-weight: bold;">${order.order_id}</span><br/>
+              <strong>Type:</strong> Drop-off Destination<br/>
+              <span style="color: #64748b; font-size: 11px;">📍 ${order.dropoff_location.address || `${lat.toFixed(4)}, ${lon.toFixed(4)}`}</span>
             </div>
-          `);
-        layerGroup.addLayer(marker);
-      });
-    }
+          `;
 
-    // 2. Plot Buyer Dropoff (Red Pin)
-    if (selectedOrder?.dropoff_location) {
-      const dropIcon = L.divIcon({
-        className: 'custom-drop-marker',
-        html: `
-          <div style="background: #ef4444; color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid #fff; box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);">
-            D
-          </div>
-        `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
-      });
+          const marker = L.marker([lat, lon], { icon: dropIcon }).bindPopup(popupContent);
+          layerGroup.addLayer(marker);
+        }
+      }
+    });
 
-      const marker = L.marker([selectedOrder.dropoff_location.latitude, selectedOrder.dropoff_location.longitude], { icon: dropIcon })
-        .bindPopup(`
-          <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4;">
-            <strong style="color: #f87171;">Buyer Dropoff (Kitchen)</strong><br/>
-            <strong>${selectedOrder.buyer_name || 'Green Leaf Restaurant'}</strong><br/>
-            ${selectedOrder.dropoff_location.address || 'Kothrud, Pune'}
-          </div>
-        `);
-      layerGroup.addLayer(marker);
-    }
-
-    // 3. Draw Optimized Route Polyline if computed
+    // 🔵 4. Draw Optimized Route Polyline if activeRoute is computed
     if (activeRoute?.route_coordinates && activeRoute.route_coordinates.length > 0) {
       const polyline = L.polyline(activeRoute.route_coordinates, {
-        color: '#0284c7', // Sky-600 / Blue (No purple!)
+        color: '#0284c7', // Sky Blue Polyline
         weight: 5,
         opacity: 0.9,
         dashArray: '8, 8',
@@ -152,268 +197,381 @@ export default function AdminLogisticsMap() {
       });
       layerGroup.addLayer(polyline);
 
-      // Fit map bounds to show full route
-      mapInstanceRef.current.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+      mapInstanceRef.current.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+    } else if (bounds.length > 0) {
+      mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
     }
-  }, [activeRoute, selectedOrder]);
+  }, [currentOrder, pendingOrders, activeRoute]);
 
-  const handleOptimizeClick = async () => {
-    if (!selectedOrder) {
-      addToast('No pending orders available to optimize.', 'warning');
-      return;
-    }
-    const route = await runRouteOptimization(selectedOrder?.order_id || 'ord_7701');
-    if (route) {
-      setDemoStep(4); // Advance demo pitch step to Driver Broadcast
-    }
+  // Handle Route Optimization (Calls Java backend POST /api/v1/admin/optimize)
+  const handleOptimizeRoute = async (orderId) => {
+    setSelectedOrderId(orderId);
+    await runRouteOptimization(orderId);
   };
 
-  if (pendingOrders.length === 0) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
-        <EmptyState
-          icon={PackageOpen}
-          title="No Pending Orders for Dispatch"
-          description="Switch to the Buyer Marketplace to create a bulk order first, or reset demo mode."
-          actionLabel="Go to Buyer Marketplace"
-          onAction={() => window.location.hash = '#/buyer'}
-        />
-      </div>
-    );
-  }
+  // Handle Dispatch to Driver
+  const handleDispatchDriver = async () => {
+    await broadcastToDrivers();
+    // After dispatching, give user option to view driver screen
+    setTimeout(() => {
+      selectRole('driver');
+    }, 1200);
+  };
+
+  // Summary counts
+  const totalOrdersCount = pendingOrders.length;
+  const totalPickupsCount = pendingOrders.reduce((acc, o) => acc + (o.pickups?.length || 0), 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
       
-      {/* Top Banner */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl glass-panel border border-slate-800">
+      {/* 1. Admin Header & Logistics Overview Bar */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl bg-white border border-blue-900/10 shadow-sm">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="p-1.5 rounded-lg bg-sky-500/20 text-sky-400">
-              <Compass className="w-5 h-5" />
+          <div className="flex items-center gap-2.5 mb-1">
+            <span className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+              <ShieldCheck className="w-5 h-5" />
             </span>
-            <h2 className="text-xl font-bold font-heading text-white">Central Logistics & Dispatch Hub</h2>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
-              USP 2: Google OR-Tools Milk-Run Engine
+            <h2 className="text-xl font-bold font-heading text-emerald-950">
+              {t('admin_dashboard_title')}
+            </h2>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+              Admin ID: adm_01
             </span>
           </div>
-          <p className="text-slate-400 text-xs md:text-sm">
-            Clusters smallholder farm pickups into a single multi-stop vehicle trajectory, reducing dead mileage and cutting logistics cost per kg.
+          <p className="text-slate-600 text-xs md:text-sm">
+            {t('admin_dashboard_sub')}
           </p>
         </div>
 
-        {/* Action Button: Optimize Batch (No Purple!) */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleOptimizeClick}
-            disabled={isOptimizing}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold text-xs shadow-lg shadow-sky-500/20 transition-all flex items-center gap-2"
-          >
-            {isOptimizing ? (
-              <>
-                <RotateCw className="w-4 h-4 animate-spin" />
-                <span>Computing Shortest Path (OR-Tools)...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-sky-200" />
-                <span>Optimize Pooled Batch</span>
-              </>
-            )}
-          </button>
+        {/* Overview Stat Badges */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <div className="text-[10px] text-slate-500 font-bold uppercase">{t('admin_stat_orders')}</div>
+            <div className="text-base font-extrabold text-slate-800 font-mono">{totalOrdersCount}</div>
+          </div>
+          <div className="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
+            <div className="text-[10px] text-emerald-800 font-bold uppercase">{t('admin_stat_pickups')}</div>
+            <div className="text-base font-extrabold text-brand-700 font-mono">{totalPickupsCount}</div>
+          </div>
+          <div className="px-3.5 py-2 rounded-xl bg-blue-50 border border-blue-200 text-center">
+            <div className="text-[10px] text-blue-800 font-bold uppercase">{t('admin_stat_opt_distance')}</div>
+            <div className="text-base font-extrabold text-blue-700 font-mono">
+              {activeRoute ? `${activeRoute.total_distance_km} km` : 'Pending'}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Grid: Interactive Map (8 cols) & Sequence / Dispatch Panel (4 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left: Leaflet Interactive Map Container (8 cols) */}
-        <div className="lg:col-span-8 space-y-4">
-          <div className="rounded-2xl glass-panel border border-slate-800 p-2 overflow-hidden shadow-2xl relative h-[520px] w-full">
-            {/* Map Canvas */}
-            <div ref={mapContainerRef} className="w-full h-full rounded-xl z-0" />
+      {fetchError && (
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600" />
+            <span>{fetchError}</span>
+          </div>
+          <button
+            onClick={loadPendingOrders}
+            className="px-3 py-1 bg-white border border-red-300 rounded-lg font-bold text-red-700 hover:bg-red-50 cursor-pointer"
+          >
+            Retry Fetch
+          </button>
+        </div>
+      )}
 
-            {/* Map Floating Overlay Badge */}
-            <div className="absolute top-4 left-4 z-10 p-3 rounded-xl bg-slate-950/90 border border-slate-800/80 backdrop-blur-md text-xs text-slate-200 space-y-1 shadow-lg max-w-xs pointer-events-none">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-brand-400" />
-                <span>Pune / Saswad / Purandar Corridor</span>
-              </div>
-              <div className="text-[11px] text-slate-400">
-                Green Pins: Farm Pickups • Red Pin: Bulk Buyer Kitchen
-              </div>
-            </div>
-
-            {/* Live Route Calculated Pill */}
-            {activeRoute && (
-              <div className="absolute bottom-4 left-4 right-4 z-10 p-3 rounded-xl bg-slate-900/95 border border-sky-500/50 backdrop-blur-md text-xs flex flex-wrap items-center justify-between gap-3 shadow-xl">
-                <div className="flex items-center gap-2 text-sky-300 font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
-                  <span>Optimized Milk-Run Sequence Active</span>
-                </div>
-                <div className="flex items-center gap-4 text-xs font-mono">
-                  <span className="text-white font-bold">{activeRoute.total_distance_km} km Total</span>
-                  <span className="text-emerald-400 font-bold">-34.5% Logistics Cost</span>
-                </div>
-              </div>
-            )}
+      {/* 2. Interactive Map (Major Component) */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-emerald-950 flex items-center gap-2">
+              <Compass className="w-5 h-5 text-blue-600" />
+              <span>{t('admin_map_title')}</span>
+            </h3>
+            <p className="text-xs text-slate-500">{t('admin_map_sub')}</p>
           </div>
 
-          {/* Environmental & Fuel Savings Metrics */}
+          {/* Map Legend */}
+          <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs">
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-[#0caf3d] inline-block" />
+              <span>{t('admin_legend_pickup')}</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-3 h-3 rounded-full bg-[#e11d48] inline-block" />
+              <span>{t('admin_legend_dropoff')}</span>
+            </span>
+            {activeRoute && (
+              <span className="flex items-center gap-1 text-blue-700">
+                <span className="w-3 h-3 rounded-full bg-[#0284c7] inline-block" />
+                <span>{t('admin_legend_route')}</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Map Canvas Card */}
+        <div className="rounded-2xl bg-white border border-emerald-900/10 p-2 overflow-hidden shadow-sm relative h-[480px] w-full">
+          <div ref={mapContainerRef} className="w-full h-full rounded-xl z-0" />
+
+          {/* Floating Map Legend (Mobile) */}
+          <div className="sm:hidden absolute top-4 left-4 z-10 p-2.5 rounded-xl bg-white/95 border border-slate-200 backdrop-blur-md text-[11px] font-semibold text-slate-700 space-y-1 shadow-md">
+            <div>{t('admin_legend_pickup')}</div>
+            <div>{t('admin_legend_dropoff')}</div>
+          </div>
+
+          {/* Live Optimized Polyline Badge Overlay */}
           {activeRoute && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="p-4 rounded-2xl glass-panel border border-slate-800 text-center">
-                <div className="text-[11px] text-slate-400 uppercase">Total Distance</div>
-                <div className="text-lg font-extrabold text-white font-mono mt-0.5">
-                  {activeRoute.total_distance_km} km
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">vs 65 km unpooled</div>
+            <div className="absolute bottom-4 left-4 right-4 z-10 p-3.5 rounded-xl bg-white/95 border border-blue-300 backdrop-blur-md text-xs flex flex-wrap items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-2 text-blue-900 font-bold">
+                <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>{t('admin_route_active')}</span>
               </div>
-
-              <div className="p-4 rounded-2xl glass-panel border border-slate-800 text-center">
-                <div className="text-[11px] text-slate-400 uppercase flex items-center justify-center gap-1">
-                  <Fuel className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Fuel Saved</span>
-                </div>
-                <div className="text-lg font-extrabold text-amber-300 font-mono mt-0.5">
-                  {activeRoute.estimated_fuel_saved_liters || 6.8} Liters
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Diesel avoided</div>
-              </div>
-
-              <div className="p-4 rounded-2xl glass-panel border border-slate-800 text-center">
-                <div className="text-[11px] text-slate-400 uppercase flex items-center justify-center gap-1">
-                  <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Transport Cost</span>
-                </div>
-                <div className="text-lg font-extrabold text-emerald-400 font-mono mt-0.5">
-                  -34.5%
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Direct margin savings</div>
+              <div className="flex items-center gap-4 font-mono text-xs">
+                <span className="text-slate-900 font-extrabold">{t('admin_total_distance_display', { dist: activeRoute.total_distance_km })}</span>
+                <span className="text-brand-700 font-extrabold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  {t('admin_cost_saved_badge')}
+                </span>
               </div>
             </div>
           )}
         </div>
+      </div>
 
-        {/* Right Column: Multi-Stop Schedule & Driver Dispatch (4 cols) */}
-        <div className="lg:col-span-4 space-y-6">
-          
-          {/* Stops Sequence Timeline */}
-          <div className="p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-sky-400" />
-                <span>Multi-Stop Milk-Run Sequence</span>
+      {/* 3. Pending Orders Section & Route Optimization Output */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* Left: Pending Orders List (7 cols) */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-base font-bold text-emerald-950 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-brand-600" />
+                <span>{t('admin_pending_orders_heading')}</span>
               </h3>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-sky-300 font-mono">
-                {activeRoute ? 'OR-Tools Optimized' : 'Pending'}
+              <span className="text-[11px] text-slate-500 font-mono">{t('admin_pending_orders_sub')}</span>
+            </div>
+            <button
+              onClick={loadPendingOrders}
+              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+              title="Refresh Orders"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {isLoadingOrders ? (
+            <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center space-y-2">
+              <div className="w-6 h-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-xs text-slate-500">Fetching pending orders from GET /api/v1/admin/pending-orders...</p>
+            </div>
+          ) : pendingOrders.length === 0 ? (
+            <EmptyState
+              icon={PackageOpen}
+              title={t('admin_no_orders_title')}
+              description={t('admin_no_orders_desc')}
+              actionLabel={t('admin_no_orders_btn')}
+              onAction={() => selectRole('buyer')}
+            />
+          ) : (
+            <div className="space-y-4">
+              {pendingOrders.map((order) => {
+                const isSelected = order.order_id === selectedOrderId;
+                const pickups = order.pickups || [];
+                const dropoff = order.dropoff_location || {};
+
+                return (
+                  <div
+                    key={order.order_id}
+                    className={`p-5 rounded-2xl bg-white border transition-all shadow-sm ${
+                      isSelected
+                        ? 'border-blue-500 ring-2 ring-blue-400/20'
+                        : 'border-slate-200/90 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-900 border border-blue-200 font-mono">
+                          Order #{order.order_id}
+                        </span>
+                        <span className="text-xs text-slate-600 font-medium">
+                          {order.status || 'PENDING_DISPATCH'}
+                        </span>
+                      </div>
+
+                      {activeRoute && isSelected && (
+                        <span className="text-[11px] font-bold text-brand-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-brand-600" />
+                          <span>{t('admin_optimized_tag')}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2.5 text-xs text-slate-700 mb-4">
+                      {/* Buyer Information */}
+                      <div className="flex items-start gap-2">
+                        <Building2 className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-slate-900">Buyer:</strong> {order.buyer_name || 'Green Leaf Restaurant'}
+                        </div>
+                      </div>
+
+                      {/* Pickups List */}
+                      <div className="flex items-start gap-2">
+                        <Truck className="w-4 h-4 text-brand-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-slate-900">{t('admin_order_card_pickups')} ({pickups.length}):</strong>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {pickups.map((p, idx) => (
+                              <span key={idx} className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 font-mono text-[11px] text-emerald-900 font-semibold">
+                                {p.lot_id} {p.crop_name ? `(${p.crop_name})` : ''}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Dropoff Coordinates */}
+                      <div className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-slate-900">{t('admin_order_card_dropoff')}:</strong> {dropoff.address || `${dropoff.latitude}, ${dropoff.longitude}`}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Optimize Route Button */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        disabled={isOptimizing}
+                        onClick={() => handleOptimizeRoute(order.order_id)}
+                        className="py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs transition-all shadow-sm shadow-blue-600/20 flex items-center gap-2 cursor-pointer active:scale-98"
+                      >
+                        {isOptimizing && isSelected ? (
+                          <>
+                            <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>{t('admin_btn_optimizing_order')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>{t('admin_btn_optimize_order')}</span>
+                          </>
+                        )}
+                      </button>
+
+                      {activeRoute && isSelected && (
+                        <button
+                          type="button"
+                          onClick={handleDispatchDriver}
+                          disabled={isDispatching}
+                          className="py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span>{isDispatching ? 'Dispatching...' : t('admin_btn_assign_driver')}</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Optimized Route Summary & Ordered Stops (5 cols) */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="p-6 rounded-2xl bg-white border border-emerald-900/10 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
+                <Navigation className="w-4 h-4 text-blue-600" />
+                <span>{t('admin_route_result_heading')}</span>
+              </h3>
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 font-mono font-bold border border-blue-200">
+                {activeRoute ? 'OR-Tools VRP Solver' : 'Awaiting Calculation'}
               </span>
             </div>
 
-            {activeRoute?.ordered_stops ? (
-              <div className="space-y-3">
-                {activeRoute.ordered_stops.map((stop, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`p-3 rounded-xl border text-xs relative ${
-                      stop.type === 'PICKUP'
-                        ? 'bg-slate-900/80 border-emerald-500/30'
-                        : 'bg-slate-900/80 border-red-500/30'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                        stop.type === 'PICKUP' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'
-                      }`}>
-                        Stop #{stop.stop_number}: {stop.type}
-                      </span>
-                      <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-slate-500" />
-                        <span>{stop.eta || '07:00 AM'}</span>
-                      </span>
-                    </div>
-
-                    <div className="font-semibold text-white mt-1">{stop.name}</div>
-                    {stop.crop && <div className="text-[11px] text-slate-400 mt-0.5">{stop.crop}</div>}
-                    
-                    <div className="text-[10px] text-slate-500 mt-1 flex justify-between border-t border-slate-800/80 pt-1 font-mono">
-                      <span>Cumulative Load:</span>
-                      <span className="text-slate-300">{stop.load_after_stop_kg} kg / 1000 kg cap</span>
+            {activeRoute ? (
+              <div className="space-y-4">
+                {/* Distance & Savings Bar */}
+                <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 flex items-center justify-between text-xs">
+                  <div>
+                    <div className="text-[11px] text-blue-900/70 font-semibold">{t('admin_total_distance_label')}</div>
+                    <div className="text-lg font-extrabold text-blue-950 font-mono">
+                      {activeRoute.total_distance_km} km
                     </div>
                   </div>
-                ))}
+                  <div className="text-right">
+                    <div className="text-[10px] text-brand-800 font-bold uppercase">{t('admin_cost_saved_badge')}</div>
+                    <div className="text-xs font-bold text-brand-700 mt-0.5">
+                      {t('admin_fuel_saved_badge', { liters: activeRoute.estimated_fuel_saved_liters || 6.8 })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ordered Stops List */}
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 mb-2">{t('admin_ordered_stops_heading')}:</h4>
+                  <div className="space-y-2.5">
+                    {activeRoute.ordered_stops?.map((stop, idx) => (
+                      <div
+                        key={idx}
+                        className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
+                          stop.type === 'PICKUP'
+                            ? 'bg-emerald-50/60 border-emerald-200'
+                            : 'bg-rose-50/60 border-rose-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[10px] ${
+                            stop.type === 'PICKUP' ? 'bg-brand-500 text-white' : 'bg-rose-600 text-white'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <div>
+                            <div className="font-bold text-slate-900">
+                              {stop.type === 'PICKUP'
+                                ? t('admin_stop_pickup', { lot_id: stop.lot_id || `P${idx+1}` })
+                                : t('admin_stop_dropoff', { buyer: currentOrder?.buyer_name || 'Buyer Kitchen' })
+                              }
+                            </div>
+                            <div className="text-[11px] text-slate-500">
+                              {stop.name || stop.address || (stop.type === 'PICKUP' ? 'Farm Location' : 'Drop-off')}
+                            </div>
+                          </div>
+                        </div>
+
+                        {stop.eta && (
+                          <span className="text-[11px] text-slate-600 font-mono flex items-center gap-1 font-medium">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            <span>{stop.eta}</span>
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Driver Dispatch Action */}
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={handleDispatchDriver}
+                    disabled={isDispatching}
+                    className="w-full py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-all shadow-md shadow-amber-600/20 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>{isDispatching ? 'Broadcasting Route...' : t('admin_btn_assign_driver')}</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="py-12 text-center text-xs text-slate-500 space-y-2">
-                <Compass className="w-8 h-8 mx-auto text-slate-600 animate-pulse" />
-                <p>Click "Optimize Pooled Batch" to calculate the Google OR-Tools multi-stop route.</p>
+                <Compass className="w-8 h-8 mx-auto text-slate-400 animate-pulse" />
+                <p>Click "Optimize Route" on any pending order to calculate the Google OR-Tools shortest path and ordered stops.</p>
               </div>
             )}
           </div>
-
-          {/* Gig Driver Broadcast Simulation Panel */}
-          <div className="p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Radio className="w-4 h-4 text-amber-400" />
-                <span>Gig Fleet Dispatch</span>
-              </h3>
-              <span className="text-[10px] text-slate-400 font-mono">Tata Ace Network</span>
-            </div>
-
-            {dispatchedDriver ? (
-              <div className="p-4 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-xs space-y-3 animate-fade-in">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-emerald-300 font-bold">
-                    <UserCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Trip Accepted & Dispatched!</span>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">
-                    IN_TRANSIT
-                  </span>
-                </div>
-
-                <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800 space-y-1 font-mono text-[11px]">
-                  <div className="text-white font-semibold">{dispatchedDriver.name}</div>
-                  <div className="text-slate-400">{dispatchedDriver.vehicle_type}</div>
-                  <div className="text-amber-400 font-bold">{dispatchedDriver.vehicle_no}</div>
-                  <div className="text-emerald-400 pt-1 border-t border-slate-800">
-                    Guaranteed Payout: ₹{dispatchedDriver.payout_inr}
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-slate-400 leading-tight">
-                  Turn-by-turn multi-stop coordinates broadcasted to driver mobile terminal.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3 text-xs">
-                <p className="text-slate-400 text-[11px] leading-relaxed">
-                  Broadcast the computed {activeRoute ? `${activeRoute.total_distance_km} km` : ''} route to available mini-truck owner-operators within the Saswad-Pune corridor.
-                </p>
-
-                <button
-                  type="button"
-                  disabled={!activeRoute || isDispatching}
-                  onClick={broadcastToDrivers}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-50 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
-                >
-                  {isDispatching ? (
-                    <>
-                      <span className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Broadcasting to Nearby Drivers (Radar)...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Radio className="w-4 h-4" />
-                      <span>Broadcast to Local Drivers</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
-
         </div>
 
       </div>
