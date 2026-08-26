@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import EmptyState from '../common/EmptyState';
 import { 
   Truck, 
   Compass, 
@@ -14,7 +15,8 @@ import {
   Sparkles,
   ArrowRight,
   ShieldCheck,
-  RotateCw
+  RotateCw,
+  PackageOpen
 } from 'lucide-react';
 import L from 'leaflet';
 
@@ -27,7 +29,8 @@ export default function AdminLogisticsMap() {
     isDispatching,
     broadcastToDrivers,
     dispatchedDriver,
-    setDemoStep
+    setDemoStep,
+    addToast
   } = useApp();
 
   const mapContainerRef = useRef(null);
@@ -35,6 +38,13 @@ export default function AdminLogisticsMap() {
   const layerGroupRef = useRef(null);
 
   const [selectedOrder, setSelectedOrder] = useState(pendingOrders[0] || null);
+
+  // Keep selected order in sync if pendingOrders change
+  useEffect(() => {
+    if (!selectedOrder && pendingOrders.length > 0) {
+      setSelectedOrder(pendingOrders[0]);
+    }
+  }, [pendingOrders, selectedOrder]);
 
   // Initialize Leaflet Map
   useEffect(() => {
@@ -55,6 +65,13 @@ export default function AdminLogisticsMap() {
 
       layerGroupRef.current = L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
+
+      // Invalidate map size after short delay to prevent grey tiles on render
+      setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 250);
     }
 
     return () => {
@@ -92,15 +109,15 @@ export default function AdminLogisticsMap() {
             <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4;">
               <strong style="color: #4ade80;">Farm Pickup #${idx + 1}</strong><br/>
               <strong>${pickup.farmer_name || 'Ramesh Patil'}</strong><br/>
-              ${pickup.crop_name || 'Tomato'} (${pickup.quantity_kg}kg)<br/>
-              <em>${pickup.area_name || 'Saswad'}</em>
+              ${pickup.crop_name || 'Tomato'} (${pickup.quantity_kg} kg)<br/>
+              <em>${pickup.area_name || 'Saswad Cluster'}</em>
             </div>
           `);
         layerGroup.addLayer(marker);
       });
     }
 
-    // 2. Plot Buyer Dropoff (Red/Amber Pin)
+    // 2. Plot Buyer Dropoff (Red Pin)
     if (selectedOrder?.dropoff_location) {
       const dropIcon = L.divIcon({
         className: 'custom-drop-marker',
@@ -127,9 +144,9 @@ export default function AdminLogisticsMap() {
     // 3. Draw Optimized Route Polyline if computed
     if (activeRoute?.route_coordinates && activeRoute.route_coordinates.length > 0) {
       const polyline = L.polyline(activeRoute.route_coordinates, {
-        color: '#3b82f6',
+        color: '#0284c7', // Sky-600 / Blue (No purple!)
         weight: 5,
-        opacity: 0.85,
+        opacity: 0.9,
         dashArray: '8, 8',
         lineCap: 'round'
       });
@@ -141,24 +158,42 @@ export default function AdminLogisticsMap() {
   }, [activeRoute, selectedOrder]);
 
   const handleOptimizeClick = async () => {
+    if (!selectedOrder) {
+      addToast('No pending orders available to optimize.', 'warning');
+      return;
+    }
     const route = await runRouteOptimization(selectedOrder?.order_id || 'ord_7701');
     if (route) {
       setDemoStep(4); // Advance demo pitch step to Driver Broadcast
     }
   };
 
+  if (pendingOrders.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
+        <EmptyState
+          icon={PackageOpen}
+          title="No Pending Orders for Dispatch"
+          description="Switch to the Buyer Marketplace to create a bulk order first, or reset demo mode."
+          actionLabel="Go to Buyer Marketplace"
+          onAction={() => window.location.hash = '#/buyer'}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
       
       {/* Top Banner */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl glass-panel border border-slate-800">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="p-1 rounded-md bg-blue-500/20 text-blue-400">
+            <span className="p-1.5 rounded-lg bg-sky-500/20 text-sky-400">
               <Compass className="w-5 h-5" />
             </span>
             <h2 className="text-xl font-bold font-heading text-white">Central Logistics & Dispatch Hub</h2>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/20">
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-500/30">
               USP 2: Google OR-Tools Milk-Run Engine
             </span>
           </div>
@@ -167,12 +202,12 @@ export default function AdminLogisticsMap() {
           </p>
         </div>
 
-        {/* Action Button: Optimize Batch */}
+        {/* Action Button: Optimize Batch (No Purple!) */}
         <div className="flex items-center gap-3">
           <button
             onClick={handleOptimizeClick}
             disabled={isOptimizing}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-50 text-white font-bold text-xs shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold text-xs shadow-lg shadow-sky-500/20 transition-all flex items-center gap-2"
           >
             {isOptimizing ? (
               <>
@@ -181,7 +216,7 @@ export default function AdminLogisticsMap() {
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4 text-blue-200" />
+                <Sparkles className="w-4 h-4 text-sky-200" />
                 <span>Optimize Pooled Batch</span>
               </>
             )}
@@ -194,7 +229,7 @@ export default function AdminLogisticsMap() {
         
         {/* Left: Leaflet Interactive Map Container (8 cols) */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="rounded-2xl glass-panel border border-slate-800 p-2 overflow-hidden shadow-2xl relative h-[520px]">
+          <div className="rounded-2xl glass-panel border border-slate-800 p-2 overflow-hidden shadow-2xl relative h-[520px] w-full">
             {/* Map Canvas */}
             <div ref={mapContainerRef} className="w-full h-full rounded-xl z-0" />
 
@@ -211,9 +246,9 @@ export default function AdminLogisticsMap() {
 
             {/* Live Route Calculated Pill */}
             {activeRoute && (
-              <div className="absolute bottom-4 left-4 right-4 z-10 p-3 rounded-xl bg-blue-950/90 border border-blue-500/50 backdrop-blur-md text-xs flex flex-wrap items-center justify-between gap-3 shadow-xl">
-                <div className="flex items-center gap-2 text-blue-200 font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-blue-400 shrink-0" />
+              <div className="absolute bottom-4 left-4 right-4 z-10 p-3 rounded-xl bg-slate-900/95 border border-sky-500/50 backdrop-blur-md text-xs flex flex-wrap items-center justify-between gap-3 shadow-xl">
+                <div className="flex items-center gap-2 text-sky-300 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
                   <span>Optimized Milk-Run Sequence Active</span>
                 </div>
                 <div className="flex items-center gap-4 text-xs font-mono">
@@ -226,13 +261,13 @@ export default function AdminLogisticsMap() {
 
           {/* Environmental & Fuel Savings Metrics */}
           {activeRoute && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 rounded-2xl glass-panel border border-slate-800 text-center">
                 <div className="text-[11px] text-slate-400 uppercase">Total Distance</div>
                 <div className="text-lg font-extrabold text-white font-mono mt-0.5">
                   {activeRoute.total_distance_km} km
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">vs 65km unpooled</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">vs 65 km unpooled</div>
               </div>
 
               <div className="p-4 rounded-2xl glass-panel border border-slate-800 text-center">
@@ -267,10 +302,10 @@ export default function AdminLogisticsMap() {
           <div className="p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <Layers className="w-4 h-4 text-blue-400" />
+                <Layers className="w-4 h-4 text-sky-400" />
                 <span>Multi-Stop Milk-Run Sequence</span>
               </h3>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-blue-300 font-mono">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-sky-300 font-mono">
                 {activeRoute ? 'OR-Tools Optimized' : 'Pending'}
               </span>
             </div>
@@ -354,7 +389,7 @@ export default function AdminLogisticsMap() {
             ) : (
               <div className="space-y-3 text-xs">
                 <p className="text-slate-400 text-[11px] leading-relaxed">
-                  Broadcast the computed {activeRoute ? `${activeRoute.total_distance_km}km` : ''} route to available mini-truck owner-operators within the Saswad-Pune corridor.
+                  Broadcast the computed {activeRoute ? `${activeRoute.total_distance_km} km` : ''} route to available mini-truck owner-operators within the Saswad-Pune corridor.
                 </p>
 
                 <button

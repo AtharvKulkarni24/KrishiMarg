@@ -5,8 +5,15 @@ import { INITIAL_AVAILABLE_LOTS, INITIAL_PENDING_ORDERS, MOCK_USERS } from '../s
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
-  // Navigation Role: 'welcome' | 'farmer' | 'buyer' | 'admin'
-  const [activeRole, setActiveRole] = useState('welcome');
+  // Navigation Role: 'welcome' | 'farmer' | 'buyer' | 'admin' | 'not_found'
+  const [activeRole, setActiveRole] = useState(() => {
+    const hash = window.location.hash.replace('#/', '').replace('#', '');
+    if (!hash || hash === '' || hash === 'welcome') return 'welcome';
+    if (hash === 'farmer') return 'farmer';
+    if (hash === 'buyer') return 'buyer';
+    if (hash === 'admin' || hash === 'logistics') return 'admin';
+    return 'not_found';
+  });
   
   // Active User session simulation
   const [currentUser, setCurrentUser] = useState(null);
@@ -28,11 +35,52 @@ export function AppProvider({ children }) {
   // Demo Pitch Step Tracker (1 to 4)
   const [demoStep, setDemoStep] = useState(1);
 
+  // Sync with Mock Mode
   useEffect(() => {
     apiClient.setMockMode(useMockMode);
   }, [useMockMode]);
 
-  const addToast = (message, type = 'success', duration = 4000) => {
+  // Sync with URL Hash and document.title
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#/', '').replace('#', '');
+      if (!hash || hash === '' || hash === 'welcome') {
+        setActiveRole('welcome');
+      } else if (hash === 'farmer') {
+        setActiveRole('farmer');
+      } else if (hash === 'buyer') {
+        setActiveRole('buyer');
+      } else if (hash === 'admin' || hash === 'logistics') {
+        setActiveRole('admin');
+      } else {
+        setActiveRole('not_found');
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  // Update document title dynamically
+  useEffect(() => {
+    if (activeRole === 'welcome') {
+      document.title = 'KrishiMarg (कृषिमार्ग) - Sovereign Direct Agri-Marketplace & AI Logistics';
+      window.history.replaceState(null, '', '#/');
+    } else if (activeRole === 'farmer') {
+      document.title = 'Farmer & FPO Portal | KrishiMarg';
+      window.history.replaceState(null, '', '#/farmer');
+    } else if (activeRole === 'buyer') {
+      document.title = 'Bulk Buyer Procurement Marketplace | KrishiMarg';
+      window.history.replaceState(null, '', '#/buyer');
+    } else if (activeRole === 'admin') {
+      document.title = 'Central Logistics & Dispatch Hub | KrishiMarg';
+      window.history.replaceState(null, '', '#/logistics');
+    } else if (activeRole === 'not_found') {
+      document.title = '404 - Page Not Found | KrishiMarg';
+    }
+  }, [activeRole]);
+
+  const addToast = (message, type = 'success', duration = 4500) => {
     const id = Date.now() + Math.random();
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => {
@@ -49,6 +97,8 @@ export function AppProvider({ children }) {
       setCurrentUser(MOCK_USERS.find(u => u.role === 'BUYER'));
     } else if (role === 'admin') {
       setCurrentUser({ user_id: 'adm_01', full_name: 'Central Logistics Dispatcher', role: 'ADMIN' });
+    } else if (role === 'welcome') {
+      setCurrentUser(null);
     } else {
       setCurrentUser(null);
     }
@@ -57,13 +107,13 @@ export function AppProvider({ children }) {
   // Add new produce lot
   const addProduceLot = (newLot) => {
     setAvailableLots(prev => [newLot, ...prev]);
-    addToast(`Produce lot "${newLot.crop_name}" listed successfully with Fair-Price guarantee!`, 'success');
+    addToast(`Produce lot for ${newLot.crop_name} (${newLot.quantity_kg} kg) listed successfully with guaranteed Fair-Price!`, 'success');
   };
 
   // Add new order
   const createOrder = (newOrder) => {
     setPendingOrders(prev => [newOrder, ...prev]);
-    addToast(`Bulk order #${newOrder.order_id} placed! Payment held in Escrow.`, 'success');
+    addToast(`Bulk order #${newOrder.order_id} placed! ₹${newOrder.total_amount.toFixed(2)} safely locked in Escrow.`, 'success');
   };
 
   // Run Route Optimization
@@ -72,10 +122,10 @@ export function AppProvider({ children }) {
       setIsOptimizing(true);
       const routeData = await apiClient.optimizeRoute(orderId);
       setActiveRoute(routeData);
-      addToast(`Google OR-Tools: Milk-run route computed! 3 stops, ${routeData.total_distance_km} km.`, 'success');
+      addToast(`Google OR-Tools: Multi-stop route calculated (${routeData.total_distance_km} km) with -34.5% cost reduction!`, 'success');
       return routeData;
     } catch (err) {
-      addToast(`Optimization error: ${err.message}`, 'error');
+      addToast(`Route optimization failed: ${err.message || 'Unable to connect to OR-Tools service.'}`, 'error');
     } finally {
       setIsOptimizing(false);
     }
@@ -84,7 +134,7 @@ export function AppProvider({ children }) {
   // Simulate Driver Dispatch
   const broadcastToDrivers = async () => {
     setIsDispatching(true);
-    await new Promise(r => setTimeout(r, 2500)); // 2.5s radar search
+    await new Promise(r => setTimeout(r, 2200));
     const driver = {
       driver_id: 'd_901',
       name: 'Aman Sharma',
@@ -96,7 +146,7 @@ export function AppProvider({ children }) {
     };
     setDispatchedDriver(driver);
     setIsDispatching(false);
-    addToast(`Trip claimed by Driver ${driver.name} (${driver.vehicle_no})!`, 'success');
+    addToast(`Route assigned to Driver ${driver.name} (${driver.vehicle_no})! Order status set to IN_TRANSIT.`, 'success');
   };
 
   const value = {
@@ -106,8 +156,10 @@ export function AppProvider({ children }) {
     currentUser,
     setCurrentUser,
     availableLots,
+    setAvailableLots,
     addProduceLot,
     pendingOrders,
+    setPendingOrders,
     createOrder,
     activeRoute,
     setActiveRoute,
@@ -120,6 +172,7 @@ export function AppProvider({ children }) {
     useMockMode,
     setUseMockMode,
     toasts,
+    setToasts,
     addToast,
     demoStep,
     setDemoStep

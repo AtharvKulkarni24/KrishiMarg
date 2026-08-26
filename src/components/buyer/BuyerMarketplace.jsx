@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { apiClient } from '../../services/api';
+import EmptyState from '../common/EmptyState';
 import { 
   Store, 
   MapPin, 
@@ -13,13 +14,18 @@ import {
   Sparkles,
   Truck,
   Plus,
-  Trash2
+  Trash2,
+  Search,
+  Filter,
+  PackageOpen
 } from 'lucide-react';
 
 export default function BuyerMarketplace() {
-  const { availableLots, createOrder, setDemoStep, selectRole } = useApp();
+  const { availableLots, createOrder, setDemoStep, selectRole, addToast } = useApp();
 
   const [selectedLots, setSelectedLots] = useState(['lot_901', 'lot_902']);
+  const [selectedCropFilter, setSelectedCropFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
@@ -27,8 +33,8 @@ export default function BuyerMarketplace() {
   // Buyer reference location (Kothrud, Pune)
   const buyerLocation = {
     buyer_id: 'b_501',
-    buyer_name: 'Green Leaf Restaurant & Catering',
-    address: 'Kothrud, Pune',
+    buyer_name: 'Green Leaf Restaurant & Mess',
+    address: 'Kothrud Central Kitchen, Pune',
     latitude: 18.5018,
     longitude: 73.8636
   };
@@ -39,6 +45,16 @@ export default function BuyerMarketplace() {
       prev.includes(lotId) ? prev.filter(id => id !== lotId) : [...prev, lotId]
     );
   };
+
+  // Filtered available lots
+  const filteredLots = availableLots.filter(lot => {
+    const matchesCrop = selectedCropFilter === 'ALL' || lot.crop_name.toLowerCase() === selectedCropFilter.toLowerCase();
+    const matchesSearch = !searchQuery || 
+      lot.crop_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (lot.farmer_name && lot.farmer_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (lot.location?.area_name && lot.location.area_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    return matchesCrop && matchesSearch;
+  });
 
   // Calculate order totals
   const chosenLots = availableLots.filter(l => selectedLots.includes(l.lot_id));
@@ -52,6 +68,11 @@ export default function BuyerMarketplace() {
   const totalSavings = Math.max(0, retailComparisonCost - totalProduceCost);
 
   const handlePlaceOrder = async () => {
+    if (chosenLots.length === 0) {
+      addToast('Please select at least one produce lot to proceed with bulk checkout.', 'warning');
+      return;
+    }
+
     setIsCheckingOut(true);
     try {
       const payload = {
@@ -72,7 +93,7 @@ export default function BuyerMarketplace() {
           quantity_kg: l.quantity_kg,
           latitude: l.location?.latitude || 18.3489,
           longitude: l.location?.longitude || 74.0312,
-          area_name: l.location?.area_name || 'Saswad Hub'
+          area_name: l.location?.area_name || 'Saswad Regional Cluster'
         }))
       };
 
@@ -89,7 +110,7 @@ export default function BuyerMarketplace() {
       setIsCheckingOut(false);
       setDemoStep(3); // Advance demo pitch step to Admin Logistics Map
     } catch (err) {
-      console.error(err);
+      addToast(`Order creation failed: ${err.message}`, 'error');
       setIsCheckingOut(false);
     }
   };
@@ -100,18 +121,18 @@ export default function BuyerMarketplace() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full">
       
       {/* Top Banner */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-6 rounded-2xl glass-panel border border-slate-800">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="p-1 rounded-md bg-amber-500/20 text-amber-400">
+            <span className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
               <Store className="w-5 h-5" />
             </span>
             <h2 className="text-xl font-bold font-heading text-white">Bulk Buyer Procurement Marketplace</h2>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
-              Buyer ID: b_501 (HoReCa / Mess)
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+              Buyer ID: b_501 (HoReCa Kitchen)
             </span>
           </div>
           <p className="text-slate-400 text-xs md:text-sm">
@@ -120,7 +141,7 @@ export default function BuyerMarketplace() {
         </div>
 
         {/* Location & Radius Badge */}
-        <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-xs text-slate-300">
+        <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-xs text-slate-300 shrink-0">
           <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
           <div>
             <div className="text-[10px] text-slate-400">Delivery Drop-off</div>
@@ -134,92 +155,138 @@ export default function BuyerMarketplace() {
         
         {/* Marketplace Feed (8 cols) */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <span>Available Fresh Lots within 50km</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-mono">
-                {availableLots.length} Lots Available
-              </span>
-            </h3>
-            <span className="text-xs text-slate-400">PostGIS Spatial Query Active</span>
-          </div>
+          
+          {/* Search & Filter Header Bar */}
+          <div className="p-4 rounded-2xl glass-panel border border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by crop, farmer, or cluster location..."
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-amber-500"
+              />
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {availableLots.map((lot) => {
-              const isSelected = selectedLots.includes(lot.lot_id);
-              return (
-                <div
-                  key={lot.lot_id}
-                  onClick={() => toggleSelectLot(lot.lot_id)}
-                  className={`p-5 rounded-2xl glass-panel border transition-all cursor-pointer flex flex-col justify-between relative group ${
-                    isSelected
-                      ? 'border-amber-500/80 bg-slate-900/95 shadow-lg shadow-amber-500/10'
-                      : 'border-slate-800 hover:border-slate-700'
+            {/* Crop Category Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              {['ALL', 'Tomato', 'Onion', 'Potato'].map((crop) => (
+                <button
+                  key={crop}
+                  onClick={() => setSelectedCropFilter(crop)}
+                  className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors shrink-0 ${
+                    selectedCropFilter === crop
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
+                      : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800'
                   }`}
                 >
-                  {/* Top Tags */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                      {lot.quality_grade ? `Agmark Grade ${lot.quality_grade}` : 'Grade A'}
-                    </span>
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-slate-500" />
-                      <span>{lot.distance_km || 28.4} km away</span>
-                    </span>
-                  </div>
+                  {crop === 'ALL' ? 'All Crops' : crop}
+                </button>
+              ))}
+            </div>
+          </div>
 
-                  {/* Crop Info */}
-                  <div className="mb-4">
-                    <h4 className="text-lg font-bold font-heading text-white group-hover:text-amber-300 transition-colors">
-                      {lot.crop_name}
-                    </h4>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      Farmer: <span className="text-slate-300 font-medium">{lot.farmer_name || 'Saswad Regional Cluster'}</span>
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Location: {lot.location?.area_name || 'Purandar Belt'}
-                    </p>
-                  </div>
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <span>Available Fresh Lots within 50km</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 font-mono">
+                {filteredLots.length} Matches
+              </span>
+            </h3>
+            <span className="text-[11px] text-slate-400">PostGIS Spatial Query Active</span>
+          </div>
 
-                  {/* Pricing & Quantity Box */}
-                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between mb-4">
-                    <div>
-                      <div className="text-[10px] text-slate-400 uppercase">Available Volume</div>
-                      <div className="text-sm font-bold text-white font-mono">{lot.quantity_kg} kg</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] text-slate-400 uppercase">Direct Price</div>
-                      <div className="text-base font-extrabold text-amber-400 font-mono">
-                        ₹{lot.price_per_kg?.toFixed(2) || '20.00'}/kg
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Selection Button */}
-                  <button
-                    type="button"
-                    className={`w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+          {filteredLots.length === 0 ? (
+            <EmptyState
+              icon={PackageOpen}
+              title="No Lots Found"
+              description="No farm lots match your search query or filter. Try clearing your search or switching filters."
+              actionLabel="Clear Filters"
+              onAction={() => {
+                setSearchQuery('');
+                setSelectedCropFilter('ALL');
+              }}
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {filteredLots.map((lot) => {
+                const isSelected = selectedLots.includes(lot.lot_id);
+                return (
+                  <div
+                    key={lot.lot_id}
+                    onClick={() => toggleSelectLot(lot.lot_id)}
+                    className={`p-5 rounded-2xl glass-panel border transition-all cursor-pointer flex flex-col justify-between relative group ${
                       isSelected
-                        ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                        ? 'border-amber-500/80 bg-slate-900/95 shadow-lg shadow-amber-500/10'
+                        : 'border-slate-800 hover:border-slate-700'
                     }`}
                   >
-                    {isSelected ? (
-                      <>
-                        <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
-                        <span>Selected in Bulk Cart</span>
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Add to Bulk Order</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                    {/* Top Tags */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {lot.quality_grade ? `Agmark Grade ${lot.quality_grade}` : 'Grade A'}
+                      </span>
+                      <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-slate-500" />
+                        <span>{lot.distance_km || 28.4} km away</span>
+                      </span>
+                    </div>
+
+                    {/* Crop Info */}
+                    <div className="mb-4">
+                      <h4 className="text-lg font-bold font-heading text-white group-hover:text-amber-300 transition-colors">
+                        {lot.crop_name}
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Producer: <span className="text-slate-300 font-medium">{lot.farmer_name || 'Saswad Regional Cluster'}</span>
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Location: {lot.location?.area_name || 'Purandar Belt'}
+                      </p>
+                    </div>
+
+                    {/* Pricing & Quantity Box */}
+                    <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center justify-between mb-4">
+                      <div>
+                        <div className="text-[10px] text-slate-400 uppercase">Available Volume</div>
+                        <div className="text-sm font-bold text-white font-mono">{lot.quantity_kg} kg</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[10px] text-slate-400 uppercase">Direct Wholesale</div>
+                        <div className="text-base font-extrabold text-amber-400 font-mono">
+                          ₹{lot.price_per_kg?.toFixed(2) || '20.00'}/kg
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Selection Button */}
+                    <button
+                      type="button"
+                      className={`w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                        isSelected
+                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                          : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      {isSelected ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
+                          <span>Selected in Bulk Cart</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add to Bulk Order</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Right Column: Escrow Checkout Summary (4 cols) */}
@@ -236,33 +303,36 @@ export default function BuyerMarketplace() {
             </div>
 
             {/* Selected Lots Summary list */}
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {chosenLots.map(lot => (
-                <div key={lot.lot_id} className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
-                  <div>
-                    <div className="font-semibold text-white">{lot.crop_name} ({lot.quantity_kg}kg)</div>
-                    <div className="text-[10px] text-slate-400">{lot.farmer_name}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono text-amber-400 font-bold">
-                      ₹{((lot.quantity_kg || 0) * (lot.price_per_kg || 20)).toFixed(2)}
+            {chosenLots.length === 0 ? (
+              <EmptyState
+                icon={ShoppingBag}
+                title="Cart is Empty"
+                description="Select produce lots from the marketplace on the left to aggregate your order."
+                className="py-4 border-0 bg-transparent"
+              />
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {chosenLots.map(lot => (
+                  <div key={lot.lot_id} className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs">
+                    <div>
+                      <div className="font-semibold text-white">{lot.crop_name} ({lot.quantity_kg} kg)</div>
+                      <div className="text-[10px] text-slate-400">{lot.farmer_name}</div>
                     </div>
-                    <button 
-                      onClick={() => toggleSelectLot(lot.lot_id)}
-                      className="text-[10px] text-red-400 hover:underline"
-                    >
-                      Remove
-                    </button>
+                    <div className="text-right">
+                      <div className="font-mono text-amber-400 font-bold">
+                        ₹{((lot.quantity_kg || 0) * (lot.price_per_kg || 20)).toFixed(2)}
+                      </div>
+                      <button 
+                        onClick={() => toggleSelectLot(lot.lot_id)}
+                        className="text-[10px] text-red-400 hover:underline cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-
-              {chosenLots.length === 0 && (
-                <div className="py-6 text-center text-xs text-slate-500">
-                  No lots selected. Click "Add to Bulk Order" on the left.
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Cost Breakdown */}
             <div className="space-y-2 pt-2 border-t border-slate-800 text-xs">
@@ -288,7 +358,7 @@ export default function BuyerMarketplace() {
                 <span className="text-amber-400 font-mono text-base">₹{totalEscrowAmount.toFixed(2)}</span>
               </div>
 
-              {/* Buyer Savings Indicator */}
+              {/* Buyer Savings Indicator (No Purple Gradients!) */}
               <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-300 flex items-center justify-between">
                 <span>Savings vs Retail Stores:</span>
                 <span className="font-bold">₹{totalSavings.toFixed(0)} Saved (18% Less)</span>
@@ -335,7 +405,7 @@ export default function BuyerMarketplace() {
               </div>
               <button 
                 onClick={() => setCheckoutModalOpen(false)}
-                className="text-slate-400 hover:text-white text-xs"
+                className="text-slate-400 hover:text-white text-xs cursor-pointer"
               >
                 ✕
               </button>

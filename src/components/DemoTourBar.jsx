@@ -15,9 +15,9 @@ export default function DemoTourBar() {
   const { demoStep, setDemoStep, selectRole } = useApp();
 
   const steps = [
-    { number: 1, role: 'farmer', title: '1. Farmer Lists Produce', subtitle: 'Fair-Price Corridor & AI Forecast' },
-    { number: 2, role: 'buyer', title: '2. Buyer Buys Bulk', subtitle: '50km Feed & Escrow Checkout' },
-    { number: 3, role: 'admin', title: '3. Admin Optimizes Route', subtitle: 'Google OR-Tools Milk-Run' },
+    { number: 1, role: 'farmer', title: '1. Farmer Listing', subtitle: 'Fair-Price Corridor & AI Forecast' },
+    { number: 2, role: 'buyer', title: '2. Buyer Bulk Cart', subtitle: '50km Feed & Escrow Checkout' },
+    { number: 3, role: 'admin', title: '3. Route Optimization', subtitle: 'Google OR-Tools Milk-Run' },
     { number: 4, role: 'admin', title: '4. Driver Dispatch', subtitle: 'Broadcast to Gig Fleet' }
   ];
 
@@ -27,7 +27,7 @@ export default function DemoTourBar() {
   };
 
   return (
-    <div className="bg-slate-900/95 border-b border-slate-800 px-4 py-2.5 backdrop-blur-md">
+    <div className="bg-slate-900/95 border-b border-slate-800 px-4 py-2.5 backdrop-blur-md w-full max-w-full overflow-hidden">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
         
         {/* Left Pitch Badge */}
@@ -41,7 +41,7 @@ export default function DemoTourBar() {
         </div>
 
         {/* Step Buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto py-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar w-full md:w-auto py-1">
           {steps.map((s, idx) => {
             const isActive = demoStep === s.number;
             const isCompleted = demoStep > s.number;
@@ -50,7 +50,7 @@ export default function DemoTourBar() {
               <React.Fragment key={s.number}>
                 <button
                   onClick={() => handleStepClick(s)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 cursor-pointer ${
                     isActive
                       ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
                       : isCompleted
@@ -83,11 +83,11 @@ export default function DemoTourBar() {
             setDemoStep(1);
             selectRole('farmer');
           }}
-          className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 px-2 py-1 rounded bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 shrink-0"
+          className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 shrink-0 cursor-pointer transition-colors"
           title="Reset Pitch to Step 1"
         >
           <RotateCcw className="w-3 h-3" />
-          <span>Reset</span>
+          <span>Reset Demo</span>
         </button>
 
       </div>
