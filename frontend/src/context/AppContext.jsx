@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../services/api';
-import { INITIAL_AVAILABLE_LOTS, INITIAL_PENDING_ORDERS, MOCK_USERS } from '../services/mockData';
+import { INITIAL_AVAILABLE_LOTS, INITIAL_PENDING_ORDERS, INITIAL_ROUTES, MOCK_USERS } from '../services/mockData';
 import { getTranslation } from '../i18n/translations';
 
 const AppContext = createContext();
@@ -36,39 +36,34 @@ export function AppProvider({ children }) {
     return getTranslation(language, key, params);
   }, [language]);
 
-  // 2. Navigation 4 User Roles: 'welcome' | 'farmer' | 'buyer' | 'driver' | 'admin' | 'not_found'
+  // 2. Navigation 3 User Roles: 'welcome' | 'farmer' | 'buyer' | 'driver' | 'not_found'
   const [activeRole, setActiveRole] = useState(() => {
     const hash = window.location.hash.replace('#/', '').replace('#', '');
     if (!hash || hash === '' || hash === 'welcome') return 'welcome';
     if (hash === 'farmer') return 'farmer';
     if (hash === 'buyer') return 'buyer';
     if (hash === 'driver' || hash === 'carrier') return 'driver';
-    if (hash === 'admin' || hash === 'logistics') return 'admin';
     return 'not_found';
   });
   
-  // Active User session simulation
-  const [currentUser, setCurrentUser] = useState(null);
+  // Active User session simulation (FARMER, BUYER, DRIVER)
+  const [currentUser, setCurrentUser] = useState(() => MOCK_USERS.find(u => u.role === 'FARMER'));
 
-  // App Data State
+  // App Data State (Master Contract aligned)
   const [availableLots, setAvailableLots] = useState(INITIAL_AVAILABLE_LOTS);
   const [pendingOrders, setPendingOrders] = useState(INITIAL_PENDING_ORDERS);
-  const [activeRoute, setActiveRoute] = useState(null);
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [isDispatching, setIsDispatching] = useState(false);
-  const [dispatchedDriver, setDispatchedDriver] = useState(null);
+  const [routes, setRoutes] = useState(INITIAL_ROUTES);
+  const [selectedRouteId, setSelectedRouteId] = useState('route_101');
+  const [routeStatusMap, setRouteStatusMap] = useState({ 'route_101': 'AVAILABLE' }); // 'AVAILABLE' | 'ACCEPTED' | 'COMPLETED'
+  const [payoutStatusMap, setPayoutStatusMap] = useState({});
 
-  // Driver Check-in state
-  const [completedStops, setCompletedStops] = useState([]);
-  const [isDeliveryCompleted, setIsDeliveryCompleted] = useState(false);
-
-  // Connectivity Mode: true = Mock (zero-latency demo), false = Live Java Backend
+  // Connectivity Mode: true = Mock, false = Live Backend
   const [useMockMode, setUseMockMode] = useState(true);
 
   // Toast System
   const [toasts, setToasts] = useState([]);
 
-  // Demo Pitch Step Tracker (1 to 4: Farmer -> Buyer -> Admin -> Driver)
+  // Demo Pitch Step Tracker (1: Farmer -> 2: Buyer -> 3: Driver)
   const [demoStep, setDemoStep] = useState(1);
 
   // Sync with Mock Mode
@@ -88,8 +83,6 @@ export function AppProvider({ children }) {
         setActiveRole('buyer');
       } else if (hash === 'driver' || hash === 'carrier') {
         setActiveRole('driver');
-      } else if (hash === 'admin' || hash === 'logistics') {
-        setActiveRole('admin');
       } else {
         setActiveRole('not_found');
       }
@@ -99,7 +92,7 @@ export function AppProvider({ children }) {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Update document title dynamically with language awareness
+  // Update document title dynamically
   useEffect(() => {
     if (activeRole === 'welcome') {
       document.title = language === 'mr' 
@@ -108,24 +101,19 @@ export function AppProvider({ children }) {
       window.history.replaceState(null, '', '#/');
     } else if (activeRole === 'farmer') {
       document.title = language === 'mr'
-        ? 'शेतकरी व एफपीओ पोर्टल | कृषिमार्ग'
-        : 'Farmer & FPO Portal | KrishiMarg';
+        ? 'शेतकरी पोर्टल | कृषिमार्ग'
+        : 'Farmer Supply Portal | KrishiMarg';
       window.history.replaceState(null, '', '#/farmer');
     } else if (activeRole === 'buyer') {
       document.title = language === 'mr'
-        ? 'घाऊक खरेदीदार बाजारपेठ | कृषिमार्ग'
-        : 'Bulk Buyer Procurement Marketplace | KrishiMarg';
+        ? 'खरेदीदार बाजारपेठ | कृषिमार्ग'
+        : 'Buyer Procurement Marketplace | KrishiMarg';
       window.history.replaceState(null, '', '#/buyer');
     } else if (activeRole === 'driver') {
       document.title = language === 'mr'
-        ? 'चालक व ड्रायव्हर टर्मिनल | कृषिमार्ग'
+        ? 'चालक व लॉजिस्टिक्स टर्मिनल | कृषिमार्ग'
         : 'Driver Fleet Terminal | KrishiMarg';
       window.history.replaceState(null, '', '#/driver');
-    } else if (activeRole === 'admin') {
-      document.title = language === 'mr'
-        ? 'अ‍ॅडमिन लॉजिस्टिक्स डॅशबोर्ड | कृषिमार्ग'
-        : 'Admin Logistics Dashboard | KrishiMarg';
-      window.history.replaceState(null, '', '#/admin');
     } else if (activeRole === 'not_found') {
       document.title = language === 'mr'
         ? '४०४ - पृष्ठ सापडले नाही | कृषिमार्ग'
@@ -149,76 +137,101 @@ export function AppProvider({ children }) {
     } else if (role === 'buyer') {
       setCurrentUser(MOCK_USERS.find(u => u.role === 'BUYER'));
     } else if (role === 'driver') {
-      setCurrentUser(MOCK_USERS.find(u => u.role === 'DRIVER') || { user_id: 'd_901', full_name: 'Aman Sharma (Driver)', role: 'DRIVER' });
-    } else if (role === 'admin') {
-      setCurrentUser({ user_id: 'adm_01', full_name: 'Central Logistics Administrator', role: 'ADMIN' });
+      setCurrentUser(MOCK_USERS.find(u => u.role === 'DRIVER') || { user_id: 'd_901', full_name: 'Aman Sharma', role: 'DRIVER' });
     } else {
       setCurrentUser(null);
     }
   };
 
-  // Add new produce lot
+  // 1. Add new produce lot (POST /api/v1/produce)
   const addProduceLot = (newLot) => {
     setAvailableLots(prev => [newLot, ...prev]);
     const msg = t('toast_lot_listed', { crop: newLot.crop_name, qty: newLot.quantity_kg });
     addToast(msg, 'success');
   };
 
-  // Add new order
+  // 2. Create new buyer order (POST /api/v1/orders)
   const createOrder = (newOrder) => {
     setPendingOrders(prev => [newOrder, ...prev]);
-    const msg = t('toast_order_placed', { order_id: newOrder.order_id, amount: newOrder.total_amount.toFixed(2) });
+
+    // Construct a corresponding Driver Route for the ordered lot(s)
+    const newRouteId = `route_${Math.floor(100 + Math.random() * 900)}`;
+    const orderedStops = [];
+    const routeCoords = [];
+
+    // Add pickup stops from order lot_ids
+    if (newOrder.lot_ids && newOrder.lot_ids.length > 0) {
+      newOrder.lot_ids.forEach(lotId => {
+        const lot = availableLots.find(l => l.lot_id === lotId);
+        if (lot) {
+          orderedStops.push({
+            type: "PICKUP",
+            lot_id: lot.lot_id,
+            latitude: lot.latitude,
+            longitude: lot.longitude
+          });
+          routeCoords.push([lot.latitude, lot.longitude]);
+        }
+      });
+    }
+
+    // Add dropoff stop
+    orderedStops.push({
+      type: "DROPOFF",
+      order_id: newOrder.order_id,
+      latitude: newOrder.dropoff_latitude,
+      longitude: newOrder.dropoff_longitude
+    });
+    routeCoords.push([newOrder.dropoff_latitude, newOrder.dropoff_longitude]);
+
+    const newRoute = {
+      route_id: newRouteId,
+      total_distance_km: 42.6,
+      pickup_count: orderedStops.filter(s => s.type === 'PICKUP').length,
+      dropoff_count: 1,
+      estimated_payout: 1200.00,
+      route_coordinates: routeCoords,
+      ordered_stops: orderedStops
+    };
+
+    setRoutes(prev => [newRoute, ...prev]);
+    setSelectedRouteId(newRouteId);
+    setRouteStatusMap(prev => ({ ...prev, [newRouteId]: 'AVAILABLE' }));
+
+    const msg = t('toast_order_placed', { order_id: newOrder.order_id });
     addToast(msg, 'success');
   };
 
-  // Run Route Optimization (calls Java API POST /api/v1/admin/optimize)
-  const runRouteOptimization = async (orderId = 'ord_7701') => {
+  // 3. Driver accepts route (POST /api/v1/driver/routes/{route_id}/accept)
+  const handleAcceptRoute = async (routeId) => {
     try {
-      setIsOptimizing(true);
-      const routeData = await apiClient.optimizeRoute(orderId);
-      setActiveRoute(routeData);
-      const msg = t('toast_route_opt', { dist: routeData.total_distance_km });
-      addToast(msg, 'success');
-      return routeData;
+      const res = await apiClient.acceptRoute(routeId, currentUser?.user_id || 'd_901');
+      if (res.status === 'ACCEPTED') {
+        setRouteStatusMap(prev => ({ ...prev, [routeId]: 'ACCEPTED' }));
+        addToast(t('toast_route_accepted', { route_id: routeId }), 'success');
+      }
     } catch (err) {
-      const msg = t('toast_opt_error', { err: err.message || 'Unable to connect to OR-Tools service.' });
-      addToast(msg, 'error');
-    } finally {
-      setIsOptimizing(false);
+      addToast(t('toast_route_error', { err: err.message }), 'error');
     }
   };
 
-  // Dispatch Route to Driver
-  const broadcastToDrivers = async () => {
-    setIsDispatching(true);
-    await new Promise(r => setTimeout(r, 1200));
-    const driver = {
-      driver_id: 'd_901',
-      name: 'Aman Sharma',
-      vehicle_no: 'MH 12 AB 1234',
-      vehicle_type: 'Tata Ace (Chota Hathi) - 1 Ton',
-      phone: '+91 98765 43210',
-      rating: 4.9,
-      payout_inr: 1200
-    };
-    setDispatchedDriver(driver);
-    setIsDispatching(false);
-    const msg = t('toast_driver_dispatched', { name: driver.name, veh: driver.vehicle_no });
-    addToast(msg, 'success');
-    setDemoStep(4);
+  // 4. Driver completes route (POST /api/v1/driver/routes/{route_id}/complete)
+  const handleCompleteRoute = async (routeId) => {
+    try {
+      const res = await apiClient.completeRoute(routeId);
+      if (res.status === 'COMPLETED') {
+        setRouteStatusMap(prev => ({ ...prev, [routeId]: 'COMPLETED' }));
+        setPayoutStatusMap(prev => ({ ...prev, [routeId]: res.payout_status }));
+        addToast(t('toast_route_completed'), 'success');
+      }
+    } catch (err) {
+      addToast(t('toast_route_error', { err: err.message }), 'error');
+    }
   };
 
-  // Driver Stop Checkin
-  const checkinStop = (stopNumber) => {
-    setCompletedStops(prev => [...new Set([...prev, stopNumber])]);
-    addToast(t('toast_pickup_checked', { qty: '300-500' }), 'success');
-  };
-
-  // Complete Driver Delivery
-  const completeDelivery = () => {
-    setIsDeliveryCompleted(true);
-    addToast(t('toast_delivery_success', { payout: '1,200' }), 'success');
-  };
+  const activeRoute = routes.find(r => r.route_id === selectedRouteId) || routes[0] || null;
+  const activeRouteStatus = routeStatusMap[selectedRouteId] || 'AVAILABLE';
+  const activePayoutStatus = payoutStatusMap[selectedRouteId] || null;
 
   const value = {
     language,
@@ -236,18 +249,15 @@ export function AppProvider({ children }) {
     pendingOrders,
     setPendingOrders,
     createOrder,
+    routes,
+    setRoutes,
+    selectedRouteId,
+    setSelectedRouteId,
     activeRoute,
-    setActiveRoute,
-    isOptimizing,
-    runRouteOptimization,
-    isDispatching,
-    broadcastToDrivers,
-    dispatchedDriver,
-    setDispatchedDriver,
-    completedStops,
-    checkinStop,
-    isDeliveryCompleted,
-    completeDelivery,
+    activeRouteStatus,
+    activePayoutStatus,
+    handleAcceptRoute,
+    handleCompleteRoute,
     useMockMode,
     setUseMockMode,
     toasts,

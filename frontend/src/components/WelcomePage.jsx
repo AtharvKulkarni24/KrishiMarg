@@ -11,11 +11,8 @@ import {
   Sparkles, 
   Layers, 
   Scale, 
-  PlayCircle,
-  MapPin,
-  Languages,
-  Send,
-  UserCheck
+  MapPin, 
+  Languages 
 } from 'lucide-react';
 
 export default function WelcomePage() {
@@ -91,15 +88,15 @@ export default function WelcomePage() {
           </p>
         </div>
 
-        {/* 4 Main Role Selection Cards (Farmer, Buyer, Driver, Admin) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-7xl mx-auto w-full">
+        {/* 3 Main Role Selection Cards (Farmer, Buyer, Driver) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
           
-          {/* 1. Farmer / FPO Card */}
+          {/* 1. Farmer Card */}
           <div 
             onClick={() => selectRole('farmer')}
-            className="group relative rounded-2xl p-5 bg-white border border-emerald-900/10 hover:border-brand-500 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-brand-500/10"
+            className="group relative rounded-2xl p-6 bg-white border border-emerald-900/10 hover:border-brand-500 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-brand-500/10"
           >
-            <div className="absolute top-3.5 right-3.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <div className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               {t('welcome_farmer_badge')}
             </div>
 
@@ -113,23 +110,23 @@ export default function WelcomePage() {
                   {t('welcome_farmer_title')}
                 </h3>
               </div>
-              <p className="text-slate-600 text-xs leading-relaxed mb-3 line-clamp-2">
+              <p className="text-slate-600 text-xs leading-relaxed mb-4">
                 {t('welcome_farmer_desc')}
               </p>
 
               {/* Feature Highlights */}
-              <ul className="space-y-2 border-t border-slate-100 pt-3 mb-4 text-xs text-slate-700">
-                <li className="flex items-center gap-1.5">
+              <ul className="space-y-2.5 border-t border-slate-100 pt-3 mb-5 text-xs text-slate-700">
+                <li className="flex items-center gap-2">
                   <Scale className="w-3.5 h-3.5 text-brand-600 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_farmer_f1_title')}</strong> Mandi +20%</span>
+                  <span className="text-[11px]"><strong>{t('welcome_farmer_f1_title')}</strong> {t('welcome_farmer_f1_desc')}</span>
                 </li>
-                <li className="flex items-center gap-1.5">
+                <li className="flex items-center gap-2">
                   <TrendingUp className="w-3.5 h-3.5 text-brand-600 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_farmer_f2_title')}</strong> 7-Day ML</span>
+                  <span className="text-[11px]"><strong>{t('welcome_farmer_f2_title')}</strong> {t('welcome_farmer_f2_desc')}</span>
                 </li>
-                <li className="flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-brand-600 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_farmer_f3_title')}</strong> Batch Pool</span>
+                <li className="flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5 text-brand-600 shrink-0" />
+                  <span className="text-[11px]"><strong>{t('welcome_farmer_f3_title')}</strong> {t('welcome_farmer_f3_desc')}</span>
                 </li>
               </ul>
             </div>
@@ -143,9 +140,9 @@ export default function WelcomePage() {
           {/* 2. Bulk Buyer Card */}
           <div 
             onClick={() => selectRole('buyer')}
-            className="group relative rounded-2xl p-5 bg-white border border-amber-900/10 hover:border-amber-500 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-amber-500/10"
+            className="group relative rounded-2xl p-6 bg-white border border-amber-900/10 hover:border-amber-500 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-amber-500/10"
           >
-            <div className="absolute top-3.5 right-3.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+            <div className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
               {t('welcome_buyer_badge')}
             </div>
 
@@ -159,23 +156,23 @@ export default function WelcomePage() {
                   {t('welcome_buyer_title')}
                 </h3>
               </div>
-              <p className="text-slate-600 text-xs leading-relaxed mb-3 line-clamp-2">
+              <p className="text-slate-600 text-xs leading-relaxed mb-4">
                 {t('welcome_buyer_desc')}
               </p>
 
               {/* Feature Highlights */}
-              <ul className="space-y-2 border-t border-slate-100 pt-3 mb-4 text-xs text-slate-700">
-                <li className="flex items-center gap-1.5">
+              <ul className="space-y-2.5 border-t border-slate-100 pt-3 mb-5 text-xs text-slate-700">
+                <li className="flex items-center gap-2">
                   <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="text-[11px]"><strong>50km Query:</strong> Local Fresh</span>
+                  <span className="text-[11px]"><strong>{t('welcome_buyer_f1_title')}</strong> {t('welcome_buyer_f1_desc')}</span>
                 </li>
-                <li className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="text-[11px]"><strong>Escrow Vault:</strong> OTP Protected</span>
-                </li>
-                <li className="flex items-center gap-1.5">
+                <li className="flex items-center gap-2">
                   <Scale className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="text-[11px]"><strong>Wholesale:</strong> 18% Less</span>
+                  <span className="text-[11px]"><strong>{t('welcome_buyer_f2_title')}</strong> {t('welcome_buyer_f2_desc')}</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="text-[11px]"><strong>{t('welcome_buyer_f3_title')}</strong> {t('welcome_buyer_f3_desc')}</span>
                 </li>
               </ul>
             </div>
@@ -189,9 +186,9 @@ export default function WelcomePage() {
           {/* 3. Driver / Fleet Carrier Card */}
           <div 
             onClick={() => selectRole('driver')}
-            className="group relative rounded-2xl p-5 bg-white border border-emerald-900/10 hover:border-emerald-600 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-emerald-600/10"
+            className="group relative rounded-2xl p-6 bg-white border border-emerald-900/10 hover:border-emerald-600 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-emerald-600/10"
           >
-            <div className="absolute top-3.5 right-3.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <div className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
               {t('welcome_driver_badge')}
             </div>
 
@@ -205,23 +202,23 @@ export default function WelcomePage() {
                   {t('welcome_driver_title')}
                 </h3>
               </div>
-              <p className="text-slate-600 text-xs leading-relaxed mb-3 line-clamp-2">
+              <p className="text-slate-600 text-xs leading-relaxed mb-4">
                 {t('welcome_driver_desc')}
               </p>
 
               {/* Feature Highlights */}
-              <ul className="space-y-2 border-t border-slate-100 pt-3 mb-4 text-xs text-slate-700">
-                <li className="flex items-center gap-1.5">
-                  <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                  <span className="text-[11px]"><strong>₹1,200/Trip:</strong> Guaranteed Fee</span>
-                </li>
-                <li className="flex items-center gap-1.5">
+              <ul className="space-y-2.5 border-t border-slate-100 pt-3 mb-5 text-xs text-slate-700">
+                <li className="flex items-center gap-2">
                   <Compass className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                  <span className="text-[11px]"><strong>Turn-by-Turn:</strong> GPS Itinerary</span>
+                  <span className="text-[11px]"><strong>{t('welcome_driver_f1_title')}</strong> {t('welcome_driver_f1_desc')}</span>
                 </li>
-                <li className="flex items-center gap-1.5">
+                <li className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                  <span className="text-[11px]"><strong>{t('welcome_driver_f2_title')}</strong> {t('welcome_driver_f2_desc')}</span>
+                </li>
+                <li className="flex items-center gap-2">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                  <span className="text-[11px]"><strong>Delivery OTP:</strong> Instant Settlement</span>
+                  <span className="text-[11px]"><strong>{t('welcome_driver_f3_title')}</strong> {t('welcome_driver_f3_desc')}</span>
                 </li>
               </ul>
             </div>
@@ -232,90 +229,21 @@ export default function WelcomePage() {
             </button>
           </div>
 
-          {/* 4. Admin Logistics Dashboard Card */}
-          <div 
-            onClick={() => selectRole('admin')}
-            className="group relative rounded-2xl p-5 bg-white border border-blue-900/10 hover:border-blue-500 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-blue-500/10"
-          >
-            <div className="absolute top-3.5 right-3.5 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200">
-              {t('welcome_admin_badge')}
-            </div>
-
-            <div>
-              <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center mb-4 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-xs">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-
-              <div className="flex items-center gap-1.5 mb-1">
-                <h3 className="text-lg font-bold font-heading text-emerald-950 group-hover:text-blue-700 transition-colors">
-                  {t('welcome_admin_title')}
-                </h3>
-              </div>
-              <p className="text-slate-600 text-xs leading-relaxed mb-3 line-clamp-2">
-                {t('welcome_admin_desc')}
-              </p>
-
-              {/* Feature Highlights */}
-              <ul className="space-y-2 border-t border-slate-100 pt-3 mb-4 text-xs text-slate-700">
-                <li className="flex items-center gap-1.5">
-                  <Compass className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span className="text-[11px]"><strong>OR-Tools:</strong> Combinatorial VRP</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <TrendingUp className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span className="text-[11px]"><strong>-34.5% Cost:</strong> Milk-Run Routing</span>
-                </li>
-                <li className="flex items-center gap-1.5">
-                  <Send className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <span className="text-[11px]"><strong>Live Orders:</strong> GET /pending-orders</span>
-                </li>
-              </ul>
-            </div>
-
-            <button className="w-full py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20">
-              <span>{t('welcome_admin_btn')}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-
-        </div>
-
-        {/* 🌟 5-Minute Evaluator Pitch Mode Button */}
-        <div className="mt-8 max-w-4xl mx-auto w-full">
-          <div className="p-5 rounded-2xl bg-white border border-emerald-300 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0">
-                <PlayCircle className="w-6 h-6 text-amber-700" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-emerald-950">{t('welcome_pitch_title')}</h4>
-                <p className="text-xs text-slate-600 mt-0.5">
-                  {t('welcome_pitch_desc')}
-                </p>
-              </div>
-            </div>
-            <button 
-              onClick={handleStartDemoPitch}
-              className="px-6 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs shadow-md shadow-brand-500/20 transition-all duration-200 shrink-0 flex items-center gap-2 cursor-pointer"
-            >
-              <span>{t('welcome_pitch_btn')}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </main>
 
-      {/* Footer Strip */}
-      <footer className="border-t border-emerald-900/10 bg-white py-4 px-6 max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2 z-10">
-        <div>
-          <span>{t('footer_text')}</span>
-        </div>
-        <div className="flex items-center gap-3 text-slate-500">
-          <span>{t('pilot_region')}</span>
-          <span>•</span>
-          <span className="text-brand-700 font-semibold">{t('tech_stack_footer')}</span>
+      {/* Footer */}
+      <footer className="border-t border-emerald-900/10 bg-white/70 backdrop-blur-md py-4 px-6 text-center text-xs text-slate-500 w-full z-10">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+          <span className="font-medium text-emerald-950">
+            {t('footer_text')}
+          </span>
+          <span className="text-slate-400 text-[11px]">
+            {t('pilot_region')} • {t('tech_stack_footer')}
+          </span>
         </div>
       </footer>
+
     </div>
   );
 }

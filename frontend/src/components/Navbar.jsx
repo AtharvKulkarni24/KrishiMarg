@@ -4,7 +4,6 @@ import {
   Sprout, 
   Store, 
   Truck, 
-  ShieldCheck, 
   Home, 
   Wifi, 
   Languages 
@@ -62,12 +61,12 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* 4 Role Switcher Tabs (Desktop / Tablet) */}
+        {/* 3 Role Switcher Tabs (Desktop / Tablet) */}
         <div className="hidden lg:flex items-center p-1 rounded-xl bg-slate-100/90 border border-slate-200/80 gap-0.5">
           {/* 1. Farmer */}
           <button
             onClick={() => selectRole('farmer')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
               activeRole === 'farmer'
                 ? 'bg-brand-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-emerald-950 hover:bg-white/70'
@@ -80,7 +79,7 @@ export default function Navbar() {
           {/* 2. Buyer */}
           <button
             onClick={() => selectRole('buyer')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
               activeRole === 'buyer'
                 ? 'bg-amber-600 text-white shadow-sm'
                 : 'text-slate-600 hover:text-amber-950 hover:bg-white/70'
@@ -93,7 +92,7 @@ export default function Navbar() {
           {/* 3. Driver */}
           <button
             onClick={() => selectRole('driver')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
               activeRole === 'driver'
                 ? 'bg-emerald-700 text-white shadow-sm'
                 : 'text-slate-600 hover:text-emerald-950 hover:bg-white/70'
@@ -102,25 +101,12 @@ export default function Navbar() {
             <Truck className="w-3.5 h-3.5" />
             <span>{t('nav_driver')}</span>
           </button>
-
-          {/* 4. Admin */}
-          <button
-            onClick={() => selectRole('admin')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-              activeRole === 'admin'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-blue-950 hover:bg-white/70'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>{t('nav_admin')}</span>
-          </button>
         </div>
 
         {/* Right Utility Buttons: Language Switcher + Mock Mode + Home */}
         <div className="flex items-center gap-2">
           
-          {/* Language Toggle Button: EN ⇄ मराठी */}
+          {/* Language Toggle Button: English | मराठी */}
           <button
             onClick={toggleLanguage}
             title={language === 'en' ? "मराठीमध्ये बदला (Switch to Marathi)" : "Switch to English"}
@@ -128,14 +114,16 @@ export default function Navbar() {
           >
             <Languages className="w-3.5 h-3.5 text-brand-600" />
             <span className="tracking-wide">
-              {language === 'en' ? 'EN ⇄ मराठी' : 'मराठी ⇄ EN'}
+              <span className={language === 'en' ? 'text-brand-700 font-extrabold underline underline-offset-2' : 'text-slate-600'}>English</span>
+              <span className="mx-1 text-slate-400 font-normal">|</span>
+              <span className={language === 'mr' ? 'text-brand-700 font-extrabold underline underline-offset-2' : 'text-slate-600'}>मराठी</span>
             </span>
           </button>
 
           {/* Mock vs Live API Mode Toggle */}
           <button
             onClick={handleToggleMock}
-            title={useMockMode ? "Switch to Live Java API" : "Switch to Offline Mock Mode"}
+            title={useMockMode ? "Switch to Live API" : "Switch to Offline Mock Mode"}
             className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
               useMockMode
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
@@ -167,8 +155,8 @@ export default function Navbar() {
 
       </div>
 
-      {/* Mobile & Tablet Role Switcher */}
-      <div className="grid grid-cols-4 lg:hidden items-center pt-2 mt-2 border-t border-slate-100 gap-1 text-center">
+      {/* Mobile & Tablet Role Switcher (3 Roles) */}
+      <div className="grid grid-cols-3 lg:hidden items-center pt-2 mt-2 border-t border-slate-100 gap-1 text-center">
         <button
           onClick={() => selectRole('farmer')}
           className={`py-1.5 text-center text-xs font-semibold rounded-lg ${
@@ -192,14 +180,6 @@ export default function Navbar() {
           }`}
         >
           {t('nav_driver')}
-        </button>
-        <button
-          onClick={() => selectRole('admin')}
-          className={`py-1.5 text-center text-xs font-semibold rounded-lg ${
-            activeRole === 'admin' ? 'bg-blue-50 text-blue-700 font-bold' : 'text-slate-500'
-          }`}
-        >
-          {t('nav_admin')}
         </button>
       </div>
     </header>

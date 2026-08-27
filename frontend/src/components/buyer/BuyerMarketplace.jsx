@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { apiClient } from '../../services/api';
+import { MOCK_USERS } from '../../services/mockData';
 import EmptyState from '../common/EmptyState';
 import { 
   Store, 
@@ -14,16 +15,16 @@ import {
   Sparkles, 
   Truck, 
   Plus, 
+  Minus,
   Trash2, 
   Search, 
-  Filter, 
   PackageOpen,
   Calendar,
   User,
-  Award
+  AlertCircle
 } from 'lucide-react';
 
-// Static crop image mapping for modern grocery marketplace card presentation
+// Static crop image mapping for grocery marketplace presentation
 const CROP_IMAGES = {
   'Tomato': 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=600&auto=format&fit=crop&q=80',
   'Onion': 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=600&auto=format&fit=crop&q=80',
@@ -35,9 +36,17 @@ const CROP_IMAGES = {
 const DEFAULT_CROP_IMAGE = 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=600&auto=format&fit=crop&q=80';
 
 export default function BuyerMarketplace() {
-  const { availableLots, createOrder, setDemoStep, selectRole, addToast, t } = useApp();
+  const { availableLots, createOrder, setDemoStep, selectRole, addToast, currentUser, t } = useApp();
 
-  const [selectedLots, setSelectedLots] = useState(['lot_901', 'lot_902']);
+  // Cart state mapping: lot_id -> selected_quantity_kg
+  const [cartItems, setCartItems] = useState({
+    'lot_901': 15,
+    'lot_902': 20
+  });
+
+  // Local card state for unadded lots: lot_id -> selected_quantity_kg
+  const [cardQuantities, setCardQuantities] = useState({});
+
   const [selectedCropFilter, setSelectedCropFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -61,40 +70,96 @@ export default function BuyerMarketplace() {
 
   // Buyer reference location (Kothrud, Pune)
   const buyerLocation = {
-    buyer_id: 'b_501',
-    buyer_name: 'Green Leaf Restaurant & Mess',
-    address: 'Kothrud Central Kitchen, Pune',
-    latitude: 18.5018,
-    longitude: 73.8636
+    buyer_id: currentUser?.user_id || 'b_501',
+    full_name: currentUser?.full_name || 'Green Leaf Restaurant & Mess',
+    latitude: currentUser?.default_lat || 18.5018,
+    longitude: currentUser?.default_lng || 73.8636
   };
 
-  // Toggle selection for bulk cart
-  const toggleSelectLot = (lotId) => {
-    setSelectedLots(prev => 
-      prev.includes(lotId) ? prev.filter(id => id !== lotId) : [...prev, lotId]
-    );
+  // Helper to resolve farmer name from users data
+  const getFarmerName = (farmerId) => {
+    const user = MOCK_USERS.find(u => u.user_id === farmerId);
+    return user ? user.full_name : farmerId;
+  };
+
+  // Cart Management Functions
+  const getSelectedQuantity = (lot) => {
+    if (cartItems[lot.lot_id] !== undefined) {
+      return cartItems[lot.lot_id];
+    }
+    if (cardQuantities[lot.lot_id] !== undefined) {
+      return cardQuantities[lot.lot_id];
+    }
+    return Math.min(15, Number(lot.quantity_kg) || 1);
+  };
+
+  const updateCartQuantity = (lotId, qty) => {
+    const lot = availableLots.find(l => l.lot_id === lotId);
+    if (!lot) return;
+    const maxAvailable = Number(lot.quantity_kg) || 1;
+    let parsed = parseInt(qty, 10);
+    if (isNaN(parsed) || parsed < 1) parsed = 1;
+    if (parsed > maxAvailable) parsed = maxAvailable;
+
+    setCartItems(prev => ({
+      ...prev,
+      [lotId]: parsed
+    }));
+  };
+
+  const setLocalCardQuantity = (lotId, qty) => {
+    const lot = availableLots.find(l => l.lot_id === lotId);
+    if (!lot) return;
+    const maxAvailable = Number(lot.quantity_kg) || 1;
+    let parsed = parseInt(qty, 10);
+    if (isNaN(parsed) || parsed < 1) parsed = 1;
+    if (parsed > maxAvailable) parsed = maxAvailable;
+
+    setCardQuantities(prev => ({
+      ...prev,
+      [lotId]: parsed
+    }));
+  };
+
+  const addToCart = (lotId, qty) => {
+    const lot = availableLots.find(l => l.lot_id === lotId);
+    if (!lot) return;
+    const maxAvailable = Number(lot.quantity_kg) || 1;
+    let parsed = parseInt(qty, 10);
+    if (isNaN(parsed) || parsed < 1) parsed = 1;
+    if (parsed > maxAvailable) parsed = maxAvailable;
+
+    setCartItems(prev => ({
+      ...prev,
+      [lotId]: parsed
+    }));
+    addToast(t('buyer_btn_in_cart', { qty: parsed }), 'success');
+  };
+
+  const removeFromCart = (lotId) => {
+    setCartItems(prev => {
+      const next = { ...prev };
+      delete next[lotId];
+      return next;
+    });
   };
 
   // Filtered available lots
   const filteredLots = availableLots.filter(lot => {
     const matchesCrop = selectedCropFilter === 'ALL' || lot.crop_name.toLowerCase() === selectedCropFilter.toLowerCase();
+    const farmerName = getFarmerName(lot.farmer_id);
     const matchesSearch = !searchQuery || 
       lot.crop_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (lot.farmer_name && lot.farmer_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (lot.location?.area_name && lot.location.area_name.toLowerCase().includes(searchQuery.toLowerCase()));
+      farmerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (lot.lot_id && lot.lot_id.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesCrop && matchesSearch;
   });
 
-  // Calculate order totals
-  const chosenLots = availableLots.filter(l => selectedLots.includes(l.lot_id));
-  const totalQuantity = chosenLots.reduce((acc, l) => acc + (l.quantity_kg || 0), 0);
-  const totalProduceCost = chosenLots.reduce((acc, l) => acc + ((l.quantity_kg || 0) * (l.price_per_kg || 20)), 0);
-  const estimatedLogisticsCost = chosenLots.length > 0 ? 1200.00 : 0; // pooled delivery fee
-  const totalEscrowAmount = totalProduceCost + estimatedLogisticsCost;
-  
-  // Retail comparison cost (e.g. ₹25/kg retail vs ₹20/kg platform)
-  const retailComparisonCost = totalQuantity * 25.00;
-  const totalSavings = Math.max(0, retailComparisonCost - totalProduceCost);
+  // Calculate order totals based strictly on chosen quantities
+  const selectedLotIds = Object.keys(cartItems);
+  const chosenLots = availableLots.filter(l => selectedLotIds.includes(l.lot_id));
+  const totalQuantity = chosenLots.reduce((acc, l) => acc + (cartItems[l.lot_id] || 0), 0);
+  const totalAmount = chosenLots.reduce((acc, l) => acc + ((cartItems[l.lot_id] || 0) * (Number(l.price_per_kg) || 0)), 0);
 
   const handlePlaceOrder = async () => {
     if (chosenLots.length === 0) {
@@ -106,47 +171,39 @@ export default function BuyerMarketplace() {
     try {
       const payload = {
         buyer_id: buyerLocation.buyer_id,
-        buyer_name: buyerLocation.buyer_name,
-        lot_ids: selectedLots,
-        total_quantity_kg: totalQuantity,
-        total_amount: totalEscrowAmount,
-        dropoff_location: {
-          latitude: buyerLocation.latitude,
-          longitude: buyerLocation.longitude,
-          address: buyerLocation.address
-        },
-        pickups: chosenLots.map(l => ({
-          lot_id: l.lot_id,
-          farmer_name: l.farmer_name,
-          crop_name: l.crop_name,
-          quantity_kg: l.quantity_kg,
-          latitude: l.location?.latitude || 18.3489,
-          longitude: l.location?.longitude || 74.0312,
-          area_name: l.location?.area_name || 'Saswad Regional Cluster'
-        }))
+        lot_ids: selectedLotIds,
+        dropoff_latitude: Number(buyerLocation.latitude),
+        dropoff_longitude: Number(buyerLocation.longitude),
+        total_amount: totalAmount
       };
 
-      const result = await apiClient.placeOrder(payload);
+      const result = await apiClient.createOrder(payload);
       const newOrder = {
-        ...payload,
-        order_id: result.order_id || `ord_${Math.floor(1000 + Math.random() * 9000)}`,
-        status: 'PENDING_DISPATCH',
-        payment_status: 'ESCROW_LOCKED'
+        order_id: result.order_id,
+        buyer_id: payload.buyer_id,
+        lot_ids: payload.lot_ids,
+        lot_quantities: { ...cartItems },
+        total_quantity: totalQuantity,
+        dropoff_latitude: payload.dropoff_latitude,
+        dropoff_longitude: payload.dropoff_longitude,
+        total_amount: result.total_amount || totalAmount,
+        status: result.status || 'PENDING_ROUTE',
+        payment_status: result.payment_status || 'MOCK_SUCCESS'
       };
 
       createOrder(newOrder);
       setCompletedOrder(newOrder);
       setIsCheckingOut(false);
-      setDemoStep(3); // Advance demo pitch step to Admin Logistics Map
+      setDemoStep(3); // Advance demo pitch step to Driver
     } catch (err) {
       addToast(t('toast_order_error', { err: err.message }), 'error');
       setIsCheckingOut(false);
     }
   };
 
-  const handleProceedToLogistics = () => {
+  const handleProceedToDriver = () => {
     setCheckoutModalOpen(false);
-    selectRole('admin');
+    selectRole('driver');
   };
 
   return (
@@ -162,8 +219,8 @@ export default function BuyerMarketplace() {
             <h2 className="text-xl font-bold font-heading text-emerald-950">
               {t('buyer_title')}
             </h2>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold border border-amber-200">
-              {t('buyer_badge')}
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold border border-amber-200 font-mono">
+              {buyerLocation.buyer_id}
             </span>
           </div>
           <p className="text-slate-600 text-xs md:text-sm">
@@ -176,12 +233,12 @@ export default function BuyerMarketplace() {
           <MapPin className="w-4 h-4 text-amber-700 shrink-0" />
           <div>
             <div className="text-[11px] text-amber-900/70 font-medium">{t('buyer_dropoff_label')}</div>
-            <div className="font-bold text-emerald-950">{t('buyer_dropoff_val')}</div>
+            <div className="font-bold text-emerald-950">{buyerLocation.full_name}</div>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Marketplace Feed (8 cols) & Order Cart Summary (4 cols) */}
+      {/* Main Grid: Marketplace Feed (8 cols) & Order Summary (4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Marketplace Feed (8 cols) */}
@@ -250,7 +307,8 @@ export default function BuyerMarketplace() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredLots.map((lot) => {
-                const isSelected = selectedLots.includes(lot.lot_id);
+                const isInCart = cartItems[lot.lot_id] !== undefined;
+                const currentQty = getSelectedQuantity(lot);
                 const cropImg = CROP_IMAGES[lot.crop_name] || DEFAULT_CROP_IMAGE;
 
                 return (
@@ -258,12 +316,12 @@ export default function BuyerMarketplace() {
                     key={lot.lot_id}
                     onClick={() => setDetailsModalLot(lot)}
                     className={`rounded-2xl bg-white border transition-all duration-200 cursor-pointer flex flex-col justify-between overflow-hidden group shadow-sm hover:shadow-md ${
-                      isSelected
+                      isInCart
                         ? 'border-amber-500 ring-2 ring-amber-400/20'
                         : 'border-slate-200/90 hover:border-brand-400'
                     }`}
                   >
-                    {/* Full-Bleed Product Image Container (NO White Padding) */}
+                    {/* Full-Bleed Product Image */}
                     <div className="w-full h-44 overflow-hidden relative bg-slate-100">
                       <img
                         src={cropImg}
@@ -274,53 +332,141 @@ export default function BuyerMarketplace() {
                           e.target.src = DEFAULT_CROP_IMAGE;
                         }}
                       />
+                      {isInCart && (
+                        <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-amber-600/90 text-white font-mono text-[10px] font-bold shadow-sm backdrop-blur-xs flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>{currentQty} kg</span>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Essential Shopping Information */}
+                    {/* Shopping Information */}
                     <div className="p-4 flex-1 flex flex-col justify-between">
                       <div>
-                        {/* Produce Name */}
-                        <h4 className="text-base font-bold font-heading text-emerald-950 group-hover:text-amber-700 transition-colors">
-                          {lot.crop_name}
-                        </h4>
+                        {/* Produce Name & Lot ID */}
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-base font-bold font-heading text-emerald-950 group-hover:text-amber-700 transition-colors">
+                            {lot.crop_name}
+                          </h4>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {lot.lot_id}
+                          </span>
+                        </div>
 
                         {/* Price & Available Volume */}
                         <div className="mt-1.5 flex items-baseline justify-between">
                           <div className="text-base font-extrabold text-amber-700 font-mono">
-                            ₹{lot.price_per_kg?.toFixed(2) || '20.00'} <span className="text-xs text-slate-500 font-normal">/ kg</span>
+                            ₹{Number(lot.price_per_kg).toFixed(2)} <span className="text-xs text-slate-500 font-normal">/ kg</span>
                           </div>
                           <div className="text-xs text-slate-500 font-medium font-mono">
                             {t('buyer_card_available')} <strong className="text-slate-800">{lot.quantity_kg} kg</strong>
                           </div>
                         </div>
+
+                        {/* Distance & Harvest Date */}
+                        <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between border-t border-slate-100 pt-1.5 font-medium">
+                          <span>{lot.distance_km ? `${lot.distance_km} km` : '28.4 km'}</span>
+                          <span>Harvest: {lot.harvest_date}</span>
+                        </div>
                       </div>
 
-                      {/* Add to Bulk Cart Button (Clickable independently without opening details modal) */}
-                      <div className="mt-4 pt-1">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevents opening the details modal
-                            toggleSelectLot(lot.lot_id);
-                          }}
-                          className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-amber-600 text-white shadow-xs'
-                              : 'bg-emerald-50 text-brand-700 hover:bg-brand-500 hover:text-white border border-emerald-200'
-                          }`}
-                        >
-                          {isSelected ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                              <span>{t('buyer_btn_selected')}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>{t('buyer_btn_add')}</span>
-                            </>
-                          )}
-                        </button>
+                      {/* Quantity Selector & Add to Cart Container */}
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-slate-700">
+                            {isInCart ? t('buyer_card_buying', { qty: currentQty }) : t('buyer_qty_label')}
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-amber-800">
+                            = ₹{(currentQty * Number(lot.price_per_kg)).toFixed(2)}
+                          </span>
+                        </div>
+
+                        {/* Quantity Stepper: − [ 15 kg ] + */}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = Math.max(1, currentQty - 1);
+                              if (isInCart) {
+                                updateCartQuantity(lot.lot_id, next);
+                              } else {
+                                setLocalCardQuantity(lot.lot_id, next);
+                              }
+                            }}
+                            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-40"
+                            disabled={currentQty <= 1}
+                            title="Decrease quantity"
+                          >
+                            −
+                          </button>
+                          <div className="flex-1 relative flex items-center">
+                            <input
+                              type="number"
+                              min="1"
+                              max={lot.quantity_kg}
+                              value={currentQty}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (val === '') {
+                                  if (isInCart) updateCartQuantity(lot.lot_id, 1);
+                                  else setLocalCardQuantity(lot.lot_id, 1);
+                                  return;
+                                }
+                                const num = parseInt(val, 10);
+                                if (!isNaN(num)) {
+                                  const bounded = Math.max(1, Math.min(Number(lot.quantity_kg), num));
+                                  if (isInCart) updateCartQuantity(lot.lot_id, bounded);
+                                  else setLocalCardQuantity(lot.lot_id, bounded);
+                                }
+                              }}
+                              className="w-full text-center py-1.5 px-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 text-xs font-mono font-bold focus:bg-white focus:border-amber-500 focus:outline-none"
+                            />
+                            <span className="absolute right-2.5 text-[10px] text-slate-400 font-medium pointer-events-none">kg</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = Math.min(Number(lot.quantity_kg), currentQty + 1);
+                              if (isInCart) {
+                                updateCartQuantity(lot.lot_id, next);
+                              } else {
+                                setLocalCardQuantity(lot.lot_id, next);
+                              }
+                            }}
+                            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-40"
+                            disabled={currentQty >= Number(lot.quantity_kg)}
+                            title="Increase quantity"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        {/* Action Button */}
+                        {isInCart ? (
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex-1 py-2 px-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                              <span>{t('buyer_btn_in_cart', { qty: currentQty })}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFromCart(lot.lot_id)}
+                              className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-colors cursor-pointer"
+                              title={t('buyer_btn_remove')}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => addToCart(lot.lot_id, currentQty)}
+                            className="w-full py-2 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-98"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>{t('buyer_btn_add_qty', { qty: currentQty })}</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -330,7 +476,7 @@ export default function BuyerMarketplace() {
           )}
         </div>
 
-        {/* Right Column: Escrow Checkout Summary (4 cols) */}
+        {/* Right Column: Order Summary & Checkout (4 cols) */}
         <div className="lg:col-span-4 space-y-6">
           <div className="p-6 rounded-2xl bg-white border border-emerald-900/10 shadow-sm space-y-5 sticky top-20">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -339,11 +485,11 @@ export default function BuyerMarketplace() {
                 <span>{t('buyer_cart_title')}</span>
               </h3>
               <span className="text-xs text-amber-800 font-bold bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-                {t('buyer_cart_lots_chosen', { count: selectedLots.length })}
+                {t('buyer_cart_lots_chosen', { count: chosenLots.length })}
               </span>
             </div>
 
-            {/* Selected Lots Summary list */}
+            {/* Selected Lots list with inline quantity adjustment */}
             {chosenLots.length === 0 ? (
               <EmptyState
                 icon={ShoppingBag}
@@ -352,26 +498,60 @@ export default function BuyerMarketplace() {
                 className="py-4 border-0 bg-transparent"
               />
             ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                {chosenLots.map(lot => (
-                  <div key={lot.lot_id} className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs">
-                    <div>
-                      <div className="font-bold text-slate-800">{lot.crop_name} ({lot.quantity_kg} kg)</div>
-                      <div className="text-[10px] text-slate-500">{lot.farmer_name}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono text-amber-800 font-extrabold">
-                        ₹{((lot.quantity_kg || 0) * (lot.price_per_kg || 20)).toFixed(2)}
+              <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                {chosenLots.map(lot => {
+                  const selectedQty = cartItems[lot.lot_id] || 1;
+                  return (
+                    <div key={lot.lot_id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2 text-xs">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="font-bold text-slate-800">{lot.crop_name} ({selectedQty} kg)</div>
+                          <div className="text-[10px] text-slate-500">{getFarmerName(lot.farmer_id)} • {lot.lot_id}</div>
+                        </div>
+                        <div className="text-right font-mono font-extrabold text-amber-800">
+                          ₹{(selectedQty * Number(lot.price_per_kg)).toFixed(2)}
+                        </div>
                       </div>
-                      <button 
-                        onClick={() => toggleSelectLot(lot.lot_id)}
-                        className="text-[10px] text-red-500 hover:text-red-700 font-medium hover:underline cursor-pointer"
-                      >
-                        {t('buyer_btn_remove')}
-                      </button>
+
+                      {/* Stepper + Remove row */}
+                      <div className="flex items-center justify-between pt-1.5 border-t border-slate-200/60">
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => updateCartQuantity(lot.lot_id, Math.max(1, selectedQty - 1))}
+                            className="w-6 h-6 rounded bg-white hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs cursor-pointer disabled:opacity-40"
+                            disabled={selectedQty <= 1}
+                            title="Decrease quantity"
+                          >
+                            −
+                          </button>
+                          <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono font-bold text-slate-800 text-[11px]">
+                            {selectedQty} kg
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateCartQuantity(lot.lot_id, Math.min(Number(lot.quantity_kg), selectedQty + 1))}
+                            className="w-6 h-6 rounded bg-white hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold flex items-center justify-center text-xs cursor-pointer disabled:opacity-40"
+                            disabled={selectedQty >= Number(lot.quantity_kg)}
+                            title="Increase quantity"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          ₹{Number(lot.price_per_kg).toFixed(2)}/kg
+                        </div>
+                        <button 
+                          onClick={() => removeFromCart(lot.lot_id)}
+                          className="text-[10px] text-red-500 hover:text-red-700 font-medium hover:underline cursor-pointer flex items-center gap-0.5"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>{t('buyer_btn_remove')}</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -383,41 +563,28 @@ export default function BuyerMarketplace() {
               </div>
               <div className="flex justify-between text-slate-600 font-medium">
                 <span>{t('buyer_produce_cost')}</span>
-                <span className="text-slate-900 font-mono">₹{totalProduceCost.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-slate-600 font-medium">
-                <span className="flex items-center gap-1">
-                  <Truck className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{t('buyer_transport_cost')}</span>
-                </span>
-                <span className="text-slate-900 font-mono">₹{estimatedLogisticsCost.toFixed(2)}</span>
+                <span className="text-slate-900 font-mono">₹{totalAmount.toFixed(2)}</span>
               </div>
 
-              {/* Total Invoice */}
+              {/* Total Order */}
               <div className="flex justify-between text-sm font-extrabold text-emerald-950 pt-2.5 border-t border-slate-100">
                 <span>{t('buyer_total_escrow')}</span>
-                <span className="text-amber-700 font-mono text-base">₹{totalEscrowAmount.toFixed(2)}</span>
-              </div>
-
-              {/* Buyer Savings Indicator */}
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between font-medium">
-                <span>{t('buyer_savings_label')}</span>
-                <span className="font-bold text-brand-700">{t('buyer_savings_val', { amount: totalSavings.toFixed(0) })}</span>
+                <span className="text-amber-700 font-mono text-base">₹{totalAmount.toFixed(2)}</span>
               </div>
             </div>
 
-            {/* Escrow Guarantee Pill */}
+            {/* Mock Payment Information Box */}
             <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-950 space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-amber-800">
                 <Lock className="w-4 h-4 text-amber-700" />
-                <span>{t('buyer_escrow_security_title')}</span>
+                <span>{t('buyer_mock_payment_notice')}</span>
               </div>
               <p className="leading-relaxed text-[11px] text-amber-900/90">
-                {t('buyer_escrow_security_desc')}
+                {t('buyer_mock_payment_sub')}
               </p>
             </div>
 
-            {/* Place Order Button */}
+            {/* Checkout Button */}
             <button
               type="button"
               disabled={chosenLots.length === 0 || isCheckingOut}
@@ -433,163 +600,222 @@ export default function BuyerMarketplace() {
       </div>
 
       {/* 🌟 1. Produce Details Modal (Centered Popup) */}
-      {detailsModalLot && (
-        <div 
-          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => setDetailsModalLot(null)}
-        >
+      {detailsModalLot && (() => {
+        const isInCart = cartItems[detailsModalLot.lot_id] !== undefined;
+        const currentQty = getSelectedQuantity(detailsModalLot);
+        const maxAvailable = Number(detailsModalLot.quantity_kg) || 1;
+
+        return (
           <div 
-            className="max-w-md w-full p-6 rounded-2xl bg-white border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+            onClick={() => setDetailsModalLot(null)}
           >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-brand-700 font-bold">
-                  <Store className="w-4 h-4" />
+            <div 
+              className="max-w-md w-full p-6 rounded-2xl bg-white border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-brand-700 font-bold">
+                    <Store className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold font-heading text-emerald-950">
+                      {detailsModalLot.crop_name}
+                    </h3>
+                    <span className="text-[11px] text-slate-500 font-mono">Lot #{detailsModalLot.lot_id}</span>
+                  </div>
                 </div>
+                <button 
+                  onClick={() => setDetailsModalLot(null)}
+                  className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center cursor-pointer font-bold text-sm"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Product Image */}
+              <div className="w-full h-52 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 relative">
+                <img
+                  src={CROP_IMAGES[detailsModalLot.crop_name] || DEFAULT_CROP_IMAGE}
+                  alt={detailsModalLot.crop_name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = DEFAULT_CROP_IMAGE;
+                  }}
+                />
+              </div>
+
+              {/* Price & Available Volume */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
                 <div>
-                  <h3 className="text-base font-bold font-heading text-emerald-950">
-                    {detailsModalLot.crop_name}
-                  </h3>
-                  <span className="text-[11px] text-slate-500 font-mono">Lot #{detailsModalLot.lot_id}</span>
+                  <div className="text-[10px] text-slate-500 font-semibold uppercase">{t('buyer_available_volume')}</div>
+                  <div className="text-base font-extrabold text-slate-900 font-mono">{detailsModalLot.quantity_kg} kg</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] text-slate-500 font-semibold uppercase">{t('buyer_direct_wholesale')}</div>
+                  <div className="text-lg font-extrabold text-amber-700 font-mono">
+                    ₹{Number(detailsModalLot.price_per_kg).toFixed(2)} <span className="text-xs text-slate-500 font-normal">/ kg</span>
+                  </div>
                 </div>
               </div>
-              <button 
-                onClick={() => setDetailsModalLot(null)}
-                className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex items-center justify-center cursor-pointer font-bold text-sm"
-              >
-                ✕
-              </button>
-            </div>
 
-            {/* Large Full-Bleed Product Image */}
-            <div className="w-full h-52 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 relative">
-              <img
-                src={CROP_IMAGES[detailsModalLot.crop_name] || DEFAULT_CROP_IMAGE}
-                alt={detailsModalLot.crop_name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = DEFAULT_CROP_IMAGE;
-                }}
-              />
-            </div>
-
-            {/* Price & Available Volume Box */}
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-              <div>
-                <div className="text-[10px] text-slate-500 font-semibold uppercase">{t('buyer_available_volume')}</div>
-                <div className="text-base font-extrabold text-slate-900 font-mono">{detailsModalLot.quantity_kg} kg</div>
-              </div>
-              <div className="text-right">
-                <div className="text-[10px] text-slate-500 font-semibold uppercase">{t('buyer_direct_wholesale')}</div>
-                <div className="text-lg font-extrabold text-amber-700 font-mono">
-                  ₹{detailsModalLot.price_per_kg?.toFixed(2) || '20.00'} <span className="text-xs text-slate-500 font-normal">/ kg</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Complete Detailed Lot Information */}
-            <div className="space-y-2.5 pt-1 text-xs text-slate-700">
-              {/* Agmark Grade */}
-              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-500 flex items-center gap-1.5">
-                  <Award className="w-3.5 h-3.5 text-brand-600" />
-                  <span>Agmark Grade</span>
-                </span>
-                <span className="font-bold text-emerald-950">
-                  {detailsModalLot.quality_grade ? `Grade ${detailsModalLot.quality_grade} (Table Purpose)` : 'Grade A'}
-                </span>
-              </div>
-
-              {/* Producer */}
-              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-500 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Producer</span>
-                </span>
-                <span className="font-semibold text-slate-900 text-right">
-                  {detailsModalLot.farmer_name || 'Saswad Regional Cluster'}
-                </span>
-              </div>
-
-              {/* Location */}
-              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-500 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Location</span>
-                </span>
-                <span className="font-medium text-slate-800 text-right">
-                  {detailsModalLot.location?.area_name || 'Purandar Agro Belt'}
-                </span>
-              </div>
-
-              {/* Distance */}
-              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                <span className="text-slate-500 flex items-center gap-1.5">
-                  <Truck className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Distance</span>
-                </span>
-                <span className="font-mono font-bold text-amber-700">
-                  {detailsModalLot.distance_km ? `${detailsModalLot.distance_km} km away` : '28.4 km away'}
-                </span>
-              </div>
-
-              {/* Harvest Date */}
-              {detailsModalLot.harvest_date && (
+              {/* Supported Lot Information */}
+              <div className="space-y-2.5 pt-1 text-xs text-slate-700">
+                {/* Producer */}
                 <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
                   <span className="text-slate-500 flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Harvest Date</span>
+                    <User className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Producer</span>
                   </span>
-                  <span className="font-mono text-slate-800">
-                    {detailsModalLot.harvest_date}
+                  <span className="font-semibold text-slate-900 text-right">
+                    {getFarmerName(detailsModalLot.farmer_id)}
                   </span>
                 </div>
-              )}
 
-              {/* Mandi Benchmark Price */}
-              {detailsModalLot.benchmark_mandi_price && (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-950 flex items-center justify-between">
-                  <span>Mandi Benchmark Reference:</span>
-                  <span className="font-mono font-bold text-brand-700">₹{detailsModalLot.benchmark_mandi_price.toFixed(2)}/kg</span>
+                {/* Coordinates */}
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <span className="text-slate-500 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Coordinates</span>
+                  </span>
+                  <span className="font-mono text-slate-800 text-right">
+                    {Number(detailsModalLot.latitude).toFixed(4)}, {Number(detailsModalLot.longitude).toFixed(4)}
+                  </span>
                 </div>
-              )}
-            </div>
 
-            {/* Add to Bulk Cart Button inside Details Modal */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  toggleSelectLot(detailsModalLot.lot_id);
-                }}
-                className={`w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm ${
-                  selectedLots.includes(detailsModalLot.lot_id)
-                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                    : 'bg-brand-500 hover:bg-brand-600 text-white'
-                }`}
-              >
-                {selectedLots.includes(detailsModalLot.lot_id) ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-white" />
-                    <span>{t('buyer_btn_selected')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4" />
-                    <span>{t('buyer_btn_add')}</span>
-                  </>
+                {/* Distance */}
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <span className="text-slate-500 flex items-center gap-1.5">
+                    <Truck className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Distance</span>
+                  </span>
+                  <span className="font-mono font-bold text-amber-700">
+                    {detailsModalLot.distance_km ? `${detailsModalLot.distance_km} km away` : '28.4 km away'}
+                  </span>
+                </div>
+
+                {/* Harvest Date */}
+                {detailsModalLot.harvest_date && (
+                  <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                    <span className="text-slate-500 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Harvest Date</span>
+                    </span>
+                    <span className="font-mono text-slate-800">
+                      {detailsModalLot.harvest_date}
+                    </span>
+                  </div>
                 )}
-              </button>
+              </div>
+
+              {/* Quantity Selection in Modal */}
+              <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-950">{t('buyer_qty_label')}</span>
+                  <span className="font-mono font-bold text-amber-800">
+                    {currentQty} kg × ₹{Number(detailsModalLot.price_per_kg).toFixed(2)} = ₹{(currentQty * Number(detailsModalLot.price_per_kg)).toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = Math.max(1, currentQty - 1);
+                      if (isInCart) updateCartQuantity(detailsModalLot.lot_id, next);
+                      else setLocalCardQuantity(detailsModalLot.lot_id, next);
+                    }}
+                    className="w-9 h-9 rounded-lg bg-white hover:bg-slate-100 border border-amber-300 text-slate-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-40"
+                    disabled={currentQty <= 1}
+                  >
+                    −
+                  </button>
+                  <div className="flex-1 relative flex items-center">
+                    <input
+                      type="number"
+                      min="1"
+                      max={maxAvailable}
+                      value={currentQty}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          if (isInCart) updateCartQuantity(detailsModalLot.lot_id, 1);
+                          else setLocalCardQuantity(detailsModalLot.lot_id, 1);
+                          return;
+                        }
+                        const num = parseInt(val, 10);
+                        if (!isNaN(num)) {
+                          const bounded = Math.max(1, Math.min(maxAvailable, num));
+                          if (isInCart) updateCartQuantity(detailsModalLot.lot_id, bounded);
+                          else setLocalCardQuantity(detailsModalLot.lot_id, bounded);
+                        }
+                      }}
+                      className="w-full text-center py-2 px-2 rounded-lg bg-white border border-amber-300 text-slate-800 text-sm font-mono font-bold focus:border-amber-600 focus:outline-none"
+                    />
+                    <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">kg</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = Math.min(maxAvailable, currentQty + 1);
+                      if (isInCart) updateCartQuantity(detailsModalLot.lot_id, next);
+                      else setLocalCardQuantity(detailsModalLot.lot_id, next);
+                    }}
+                    className="w-9 h-9 rounded-lg bg-white hover:bg-slate-100 border border-amber-300 text-slate-700 font-bold flex items-center justify-center transition-colors cursor-pointer text-sm disabled:opacity-40"
+                    disabled={currentQty >= maxAvailable}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Add to Cart / In Cart Buttons */}
+              <div className="pt-2">
+                {isInCart ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDetailsModalLot(null)}
+                      className="flex-1 py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                      <span>{t('buyer_btn_in_cart', { qty: currentQty })}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        removeFromCart(detailsModalLot.lot_id);
+                        setDetailsModalLot(null);
+                      }}
+                      className="p-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-colors cursor-pointer"
+                      title={t('buyer_btn_remove')}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addToCart(detailsModalLot.lot_id, currentQty);
+                      setDetailsModalLot(null);
+                    }}
+                    className="w-full py-3 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm shadow-brand-500/20"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>{t('buyer_btn_add_qty', { qty: currentQty })}</span>
+                  </button>
+                )}
+              </div>
+
             </div>
-
           </div>
-        </div>
-      )}
+        );
+      })()}
 
-      {/* 🌟 2. Escrow Modal Confirmation */}
+      {/* 🌟 2. Mock Checkout Confirmation Modal */}
       {checkoutModalOpen && (
         <div 
           className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4"
@@ -619,18 +845,26 @@ export default function BuyerMarketplace() {
                 {t('buyer_modal_summary', { qty: totalQuantity, count: chosenLots.length })}
               </p>
 
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 font-mono">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Total Produce:</span>
-                  <span className="text-slate-800 font-bold">₹{totalProduceCost.toFixed(2)}</span>
+              {/* Itemized breakdown with actual purchased quantities */}
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 font-mono">
+                <div className="space-y-1 pb-2 border-b border-slate-200">
+                  {chosenLots.map(lot => {
+                    const qty = cartItems[lot.lot_id] || 1;
+                    return (
+                      <div key={lot.lot_id} className="flex justify-between text-[11px]">
+                        <span className="text-slate-700">{lot.crop_name} ({lot.lot_id}): {qty} kg × ₹{Number(lot.price_per_kg).toFixed(2)}</span>
+                        <span className="font-bold text-slate-900">₹{(qty * Number(lot.price_per_kg)).toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Shared Transport:</span>
-                  <span className="text-slate-800 font-bold">₹{estimatedLogisticsCost.toFixed(2)}</span>
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-slate-500">Drop-off Coordinates:</span>
+                  <span className="text-slate-800 font-bold">{buyerLocation.latitude.toFixed(4)}, {buyerLocation.longitude.toFixed(4)}</span>
                 </div>
-                <div className="flex justify-between text-amber-800 font-extrabold pt-1.5 border-t border-slate-200">
-                  <span>Escrow Lock Total:</span>
-                  <span>₹{totalEscrowAmount.toFixed(2)}</span>
+                <div className="flex justify-between text-amber-800 font-extrabold pt-1.5 border-t border-slate-200 text-sm">
+                  <span>Total Order Amount:</span>
+                  <span>₹{totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -645,10 +879,10 @@ export default function BuyerMarketplace() {
                   {t('buyer_modal_success_desc')}
                 </p>
                 <button
-                  onClick={handleProceedToLogistics}
+                  onClick={handleProceedToDriver}
                   className="w-full py-2.5 px-4 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-brand-500/20"
                 >
-                  <span>{t('buyer_modal_btn_logistics')}</span>
+                  <span>{t('buyer_modal_btn_driver')}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -663,7 +897,7 @@ export default function BuyerMarketplace() {
                 </button>
                 <button
                   type="button"
-                  disabled={isCheckingOut}
+                  disabled={isCheckingOut || chosenLots.length === 0}
                   onClick={handlePlaceOrder}
                   className="flex-1 py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-all shadow-md shadow-amber-600/20 flex items-center justify-center gap-2 cursor-pointer"
                 >

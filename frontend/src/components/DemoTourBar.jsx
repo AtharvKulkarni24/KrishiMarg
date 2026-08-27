@@ -13,8 +13,7 @@ export default function DemoTourBar() {
   const steps = [
     { number: 1, role: 'farmer', title: t('tour_step_1'), subtitle: t('tour_step_1_sub') },
     { number: 2, role: 'buyer', title: t('tour_step_2'), subtitle: t('tour_step_2_sub') },
-    { number: 3, role: 'admin', title: t('tour_step_3'), subtitle: t('tour_step_3_sub') },
-    { number: 4, role: 'driver', title: t('tour_step_4'), subtitle: t('tour_step_4_sub') }
+    { number: 3, role: 'driver', title: t('tour_step_3'), subtitle: t('tour_step_3_sub') }
   ];
 
   const handleStepClick = (step) => {
