@@ -37,7 +37,7 @@ public class BuyerService {
         this.geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
     }
 
-    public List<ProduceLot> searchProduceLots(Double lat, Double lng, Double radiusKm) {
+    public List<ProduceLot> searchProduceLots(Double lat, Double lng, Double radiusKm, String crop) {
         if (lat == null || lng == null) {
             throw new IllegalArgumentException("Latitude and longitude are required for search");
         }
@@ -45,6 +45,9 @@ public class BuyerService {
         double radiusMeters = (radiusKm != null ? radiusKm : 50.0) * 1000.0;
         Point buyerLocation = geometryFactory.createPoint(new Coordinate(lng, lat));
 
+        if (crop != null && !crop.trim().isEmpty()) {
+            return produceLotRepository.findLotsWithinRadiusAndCrop(ProduceLot.STATUS_AVAILABLE, "%" + crop + "%", buyerLocation, radiusMeters);
+        }
         return produceLotRepository.findLotsWithinRadius(ProduceLot.STATUS_AVAILABLE, buyerLocation, radiusMeters);
     }
 
@@ -98,6 +101,7 @@ public class BuyerService {
                 request.getDropoffLongitude(),
                 Order.STATUS_PENDING_ROUTE
         );
+        order.setPaymentStatus("SUCCESS"); // Mock payment was successful
 
         Order savedOrder = orderRepository.save(order);
         log.info("Created new order {} with status PENDING_ROUTE", savedOrder.getOrderId());

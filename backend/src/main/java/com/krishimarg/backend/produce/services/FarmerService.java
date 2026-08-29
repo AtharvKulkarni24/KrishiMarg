@@ -48,7 +48,9 @@ public class FarmerService {
                 request.getCropName(),
                 request.getQuantityKg(),
                 request.getPricePerKg(),
-                location
+                location,
+                request.getHarvestDate(),
+                request.getImageUrl()
         );
 
         return produceLotRepository.save(lot);
@@ -56,6 +58,14 @@ public class FarmerService {
 
     public List<ProduceLot> getProduceLotsByFarmer(String farmerId) {
         return produceLotRepository.findByFarmerId(farmerId);
+    }
+
+    @Transactional
+    public ProduceLot addHarvestQuantity(String lotId, Double additionalQuantityKg) {
+        ProduceLot lot = produceLotRepository.findById(lotId)
+                .orElseThrow(() -> new IllegalArgumentException("Lot not found"));
+        lot.setQuantityKg(lot.getQuantityKg() + additionalQuantityKg);
+        return produceLotRepository.save(lot);
     }
 
     public Map<String, Object> getInsights() {

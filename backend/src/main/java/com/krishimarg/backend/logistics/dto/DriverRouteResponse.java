@@ -1,7 +1,6 @@
 package com.krishimarg.backend.logistics.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -9,67 +8,15 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DriverRouteResponse {
 
-    @JsonProperty("routeId")
     private String routeId;
-
-    @JsonProperty("route_id")
-    public String getRouteIdSnake() {
-        return routeId;
-    }
-
-    @JsonProperty("driver_id")
     private String driverId;
-
-    @JsonProperty("status")
     private String status;
-
-    @JsonProperty("totalDistanceKm")
     private Double totalDistanceKm;
-
-    @JsonProperty("total_distance_km")
-    public Double getTotalDistanceKmSnake() {
-        return totalDistanceKm;
-    }
-
-    @JsonProperty("pickupCount")
     private Integer pickupCount;
-
-    @JsonProperty("pickup_count")
-    public Integer getPickupCountSnake() {
-        return pickupCount;
-    }
-
-    @JsonProperty("dropoffCount")
     private Integer dropoffCount;
-
-    @JsonProperty("dropoff_count")
-    public Integer getDropoffCountSnake() {
-        return dropoffCount;
-    }
-
-    @JsonProperty("estimatedPayout")
     private BigDecimal estimatedPayout;
-
-    @JsonProperty("estimated_payout")
-    public BigDecimal getEstimatedPayoutSnake() {
-        return estimatedPayout;
-    }
-
-    @JsonProperty("routeCoordinates")
     private List<RouteCoordinate> routeCoordinates;
-
-    @JsonProperty("route_coordinates")
-    public List<RouteCoordinate> getRouteCoordinatesSnake() {
-        return routeCoordinates;
-    }
-
-    @JsonProperty("orderedStops")
     private List<OrderedStopDto> orderedStops;
-
-    @JsonProperty("ordered_stops")
-    public List<OrderedStopDto> getOrderedStopsSnake() {
-        return orderedStops;
-    }
 
     public DriverRouteResponse() {
     }

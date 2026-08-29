@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import org.locationtech.jts.geom.Point;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -38,19 +39,27 @@ public class ProduceLot {
     @Column(name = "location", columnDefinition = "geometry(Point,4326)")
     private Point location;
 
+    @Column(name = "harvest_date")
+    private LocalDate harvestDate;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public ProduceLot() {
     }
 
-    public ProduceLot(String lotId, String farmerId, String cropName, Double quantityKg, BigDecimal pricePerKg, Point location) {
+    public ProduceLot(String lotId, String farmerId, String cropName, Double quantityKg, BigDecimal pricePerKg, Point location, LocalDate harvestDate, String imageUrl) {
         this.lotId = lotId;
         this.farmerId = farmerId;
         this.cropName = cropName;
         this.quantityKg = quantityKg;
         this.pricePerKg = pricePerKg;
         this.location = location;
+        this.harvestDate = harvestDate;
+        this.imageUrl = imageUrl;
         this.status = STATUS_AVAILABLE;
         this.createdAt = LocalDateTime.now();
     }
@@ -109,6 +118,22 @@ public class ProduceLot {
 
     public void setLocation(Point location) {
         this.location = location;
+    }
+
+    public LocalDate getHarvestDate() {
+        return harvestDate;
+    }
+
+    public void setHarvestDate(LocalDate harvestDate) {
+        this.harvestDate = harvestDate;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public LocalDateTime getCreatedAt() {

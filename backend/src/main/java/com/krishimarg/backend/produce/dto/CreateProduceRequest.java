@@ -1,6 +1,7 @@
 package com.krishimarg.backend.produce.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public class CreateProduceRequest {
     private String farmerId;
@@ -9,6 +10,8 @@ public class CreateProduceRequest {
     private BigDecimal pricePerKg;
     private Double latitude;
     private Double longitude;
+    private LocalDate harvestDate;
+    private String imageUrl;
 
     public CreateProduceRequest() {
     }
@@ -59,5 +62,21 @@ public class CreateProduceRequest {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public LocalDate getHarvestDate() {
+        return harvestDate;
+    }
+
+    public void setHarvestDate(LocalDate harvestDate) {
+        this.harvestDate = harvestDate;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

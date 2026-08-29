@@ -23,9 +23,10 @@ public class BuyerController {
     public ResponseEntity<List<ProduceLot>> searchProduceLots(
             @RequestParam("lat") Double lat,
             @RequestParam("lng") Double lng,
-            @RequestParam(value = "radiusKm", required = false) Double radiusKm) {
+            @RequestParam(value = "radius_km", required = false) Double radiusKm,
+            @RequestParam(value = "crop", required = false) String crop) {
         
-        List<ProduceLot> lots = buyerService.searchProduceLots(lat, lng, radiusKm);
+        List<ProduceLot> lots = buyerService.searchProduceLots(lat, lng, radiusKm, crop);
         return ResponseEntity.ok(lots);
     }
 

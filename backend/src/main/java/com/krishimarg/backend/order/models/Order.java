@@ -41,6 +41,9 @@ public class Order {
     @Column(name = "route_id", length = 50)
     private String routeId;
 
+    @Column(name = "payment_status", length = 30)
+    private String paymentStatus = "PENDING";
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -56,6 +59,7 @@ public class Order {
         this.dropoffLatitude = dropoffLatitude;
         this.dropoffLongitude = dropoffLongitude;
         this.status = status != null ? status : STATUS_PENDING_ROUTE;
+        this.paymentStatus = "PENDING";
         this.createdAt = LocalDateTime.now();
     }
 
@@ -129,5 +133,13 @@ public class Order {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
     }
 }

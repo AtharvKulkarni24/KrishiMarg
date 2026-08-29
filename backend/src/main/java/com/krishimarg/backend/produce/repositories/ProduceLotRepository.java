@@ -18,4 +18,7 @@ public interface ProduceLotRepository extends JpaRepository<ProduceLot, String> 
     // Since coordinates are EPSG:4326, ST_DWithin with geography type uses meters.
     @Query(value = "SELECT * FROM produce_lots p WHERE p.status = :status AND ST_DWithin(p.location\\:\\:geography, :point\\:\\:geography, :radiusInMeters)", nativeQuery = true)
     List<ProduceLot> findLotsWithinRadius(@Param("status") String status, @Param("point") Point point, @Param("radiusInMeters") double radiusInMeters);
+
+    @Query(value = "SELECT * FROM produce_lots p WHERE p.status = :status AND p.crop_name ILIKE :cropName AND ST_DWithin(p.location\\:\\:geography, :point\\:\\:geography, :radiusInMeters)", nativeQuery = true)
+    List<ProduceLot> findLotsWithinRadiusAndCrop(@Param("status") String status, @Param("cropName") String cropName, @Param("point") Point point, @Param("radiusInMeters") double radiusInMeters);
 }

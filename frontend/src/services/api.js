@@ -52,7 +52,7 @@ export const apiClient = {
       };
     }
 
-    const res = await fetch(`${BASE_URL}/produce`, {
+    const res = await fetch(`${BASE_URL}/farmer/produce`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -185,7 +185,7 @@ export const apiClient = {
       };
     }
 
-    const res = await fetch(`${BASE_URL}/produce/${lotId}`, {
+    const res = await fetch(`${BASE_URL}/farmer/produce/${lotId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ additional_quantity_kg: Number(additionalQuantityKg) })
