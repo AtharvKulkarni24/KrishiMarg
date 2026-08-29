@@ -65,7 +65,7 @@ export function AppProvider({ children }) {
   const [payoutStatusMap, setPayoutStatusMap] = useState({});
 
   // Connectivity Mode: true = Mock, false = Live Backend
-  const [useMockMode, setUseMockMode] = useState(true);
+
 
   // Farmer Order Notifications State
   const [farmerNotifications, setFarmerNotifications] = useState([
@@ -112,9 +112,7 @@ export function AppProvider({ children }) {
   const [demoStep, setDemoStep] = useState(1);
 
   // Sync with Mock Mode
-  useEffect(() => {
-    apiClient.setMockMode(useMockMode);
-  }, [useMockMode]);
+
 
   // Sync with URL Hash
   useEffect(() => {
@@ -608,8 +606,7 @@ export function AppProvider({ children }) {
     handleCompleteRoute,
     optimizeRouteForOrder,
     assignDriverToRoute,
-    useMockMode,
-    setUseMockMode,
+
     toasts,
     setToasts,
     addToast,

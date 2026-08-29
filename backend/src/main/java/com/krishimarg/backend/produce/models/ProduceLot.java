@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import org.locationtech.jts.geom.Point;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -36,6 +37,7 @@ public class ProduceLot {
     @Column(name = "status", length = 30)
     private String status = STATUS_AVAILABLE;
 
+    @JsonIgnore
     @Column(name = "location", columnDefinition = "geometry(Point,4326)")
     private Point location;
 
@@ -112,6 +114,7 @@ public class ProduceLot {
         this.status = status;
     }
 
+    @JsonIgnore
     public Point getLocation() {
         return location;
     }

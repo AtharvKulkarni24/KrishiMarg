@@ -14,24 +14,10 @@ export default function Navbar() {
   const { 
     activeRole, 
     selectRole, 
-    useMockMode, 
-    setUseMockMode,
-    addToast,
     language,
     toggleLanguage,
     t 
   } = useApp();
-
-  const handleToggleMock = () => {
-    const nextMode = !useMockMode;
-    setUseMockMode(nextMode);
-    addToast(
-      nextMode 
-        ? t('toast_mock_active') 
-        : t('toast_live_active'),
-      'info'
-    );
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-emerald-900/10 shadow-sm px-4 lg:px-8 py-2.5 transition-all">
@@ -117,7 +103,7 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Right Utility Buttons: Language Switcher + Mock Mode + Home */}
+        {/* Right Utility Buttons: Language Switcher + Home */}
         <div className="flex items-center gap-2">
           
           {/* Language Toggle Button: English | मराठी */}
@@ -132,29 +118,6 @@ export default function Navbar() {
               <span className="mx-1 text-slate-400 font-normal">|</span>
               <span className={language === 'mr' ? 'text-brand-700 font-extrabold underline underline-offset-2' : 'text-slate-600'}>मराठी</span>
             </span>
-          </button>
-
-          {/* Mock vs Live API Mode Toggle */}
-          <button
-            onClick={handleToggleMock}
-            title={useMockMode ? "Switch to Live API" : "Switch to Offline Mock Mode"}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-              useMockMode
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                : 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100'
-            }`}
-          >
-            {useMockMode ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-brand-500 animate-pulse" />
-                <span>{t('nav_mock_mode')}</span>
-              </>
-            ) : (
-              <>
-                <Wifi className="w-3.5 h-3.5 text-blue-600" />
-                <span>{t('nav_live_mode')}</span>
-              </>
-            )}
           </button>
 
           {/* Home / Switcher button */}
