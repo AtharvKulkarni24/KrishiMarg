@@ -1,10 +1,16 @@
 package com.krishimarg.backend;
 
-import com.krishimarg.backend.controllers.DriverController;
-import com.krishimarg.backend.controllers.LogisticsController;
-import com.krishimarg.backend.dto.*;
-import com.krishimarg.backend.exceptions.*;
-import com.krishimarg.backend.services.LogisticsService;
+import com.krishimarg.backend.logistics.controllers.DriverController;
+import com.krishimarg.backend.logistics.controllers.LogisticsController;
+import com.krishimarg.backend.logistics.dto.*;
+import com.krishimarg.backend.logistics.services.LogisticsService;
+import com.krishimarg.backend.common.exceptions.GlobalExceptionHandler;
+import com.krishimarg.backend.common.exceptions.InvalidRouteStateException;
+import com.krishimarg.backend.common.exceptions.RouteAlreadyAcceptedException;
+import com.krishimarg.backend.common.exceptions.RouteNotFoundException;
+import com.krishimarg.backend.common.exceptions.RouteOptimizerUnavailableException;
+import com.krishimarg.backend.common.exceptions.UnauthorizedDriverException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -8,7 +8,6 @@ import tools.jackson.core.JsonToken;
 import tools.jackson.databind.DeserializationContext;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ValueDeserializer;
-import tools.jackson.databind.annotation.JsonDeserialize;
 
 public class RouteCoordinate {
 
