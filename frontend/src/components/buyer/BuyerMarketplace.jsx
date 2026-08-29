@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { apiClient } from '../../services/api';
+import BuyerHeader from './BuyerHeader';
+import SearchAndFilterBar from './SearchAndFilterBar';
+import ProduceFeed from './ProduceFeed';
+import BuyerCart from './BuyerCart';
+import CheckoutModal from './CheckoutModal';
 import { 
   MOCK_USERS, 
   CROP_IMAGES, 
