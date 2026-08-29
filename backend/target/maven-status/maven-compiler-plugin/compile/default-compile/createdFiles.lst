@@ -7,6 +7,7 @@ com\krishimarg\backend\common\exceptions\GlobalExceptionHandler.class
 com\krishimarg\backend\common\exceptions\RouteOptimizerUnavailableException.class
 com\krishimarg\backend\common\exceptions\InvalidRouteStateException.class
 com\krishimarg\backend\logistics\services\LogisticsService$2.class
+com\krishimarg\backend\produce\services\FarmerService$1.class
 com\krishimarg\backend\order\models\Order.class
 com\krishimarg\backend\logistics\controllers\DriverController.class
 com\krishimarg\backend\logistics\dto\OptimizeRoutePythonResponse.class

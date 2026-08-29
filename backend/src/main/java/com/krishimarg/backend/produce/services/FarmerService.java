@@ -74,7 +74,12 @@ public class FarmerService {
         for (String crop : crops) {
             try {
                 String url = forecastUrl + "?crop=" + crop;
-                org.springframework.http.ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+                org.springframework.http.ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                        url,
+                        org.springframework.http.HttpMethod.GET,
+                        null,
+                        new org.springframework.core.ParameterizedTypeReference<Map<String, Object>>() {}
+                );
                 if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                     mlForecast.put(crop + "_next_week_trend", response.getBody().get("forecast_trend"));
                 } else {
