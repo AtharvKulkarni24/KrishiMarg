@@ -1,48 +1,57 @@
--- 1. Create Users Table (Farmers, Buyers, Drivers)
+-- 1. Create Users Table
 CREATE TABLE users (
     user_id VARCHAR(50) PRIMARY KEY,
     full_name VARCHAR(100) NOT NULL,
-    role VARCHAR(20) NOT NULL, -- 'FARMER', 'BUYER', 'DRIVER'
+    role VARCHAR(20) NOT NULL,
     default_lat FLOAT,
     default_lng FLOAT
 );
 
--- 2. Create Produce Lots Table (Inventory & Farm Location)
+-- 2. Create Produce Lots Table
 CREATE TABLE produce_lots (
     lot_id VARCHAR(50) PRIMARY KEY,
     farmer_id VARCHAR(50) NOT NULL,
-    crop_name VARCHAR(50) NOT NULL,
-    quantity_kg INT NOT NULL,
-    quality_grade VARCHAR(10),
+    crop_name VARCHAR(100) NOT NULL,
+    quantity_kg FLOAT,
     price_per_kg DECIMAL(10, 2),
-    harvest_date DATE,
-    status VARCHAR(20) DEFAULT 'AVAILABLE',
-    farm_location GEOMETRY(Point, 4326),
+    status VARCHAR(30) DEFAULT 'AVAILABLE',
+    location GEOMETRY(Point, 4326),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (farmer_id) REFERENCES users(user_id)
 );
 
--- 3. Create Orders Table (Purchases)
+-- 3. Create Orders Table
 CREATE TABLE orders (
     order_id VARCHAR(50) PRIMARY KEY,
     buyer_id VARCHAR(50) NOT NULL,
-    lot_ids JSONB NOT NULL,
+    lot_ids TEXT,
     total_amount DECIMAL(10, 2),
-    dropoff_location GEOMETRY(Point, 4326), -- 4326 is the standard GPS coordinate system
+    dropoff_latitude FLOAT,
+    dropoff_longitude FLOAT,
     status VARCHAR(30) DEFAULT 'PENDING_ROUTE',
+    route_id VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (buyer_id) REFERENCES users(user_id)
 );
 
--- 4. Create Delivery Routes Table (Logistics)
+-- 4. Create Delivery Routes Table
 CREATE TABLE delivery_routes (
     route_id VARCHAR(50) PRIMARY KEY,
     driver_id VARCHAR(50),
-    route_coordinates JSONB NOT NULL,
+    route_coordinates TEXT NOT NULL,
     status VARCHAR(30) DEFAULT 'PENDING_DRIVER',
+    total_distance_km FLOAT,
+    estimated_payout DECIMAL(10, 2),
+    ordered_stops TEXT,
+    pickup_count INT,
+    dropoff_count INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
     FOREIGN KEY (driver_id) REFERENCES users(user_id)
 );
 
 -- 5. Create Spatial Index (Speeds up the 50km radius search)
-CREATE INDEX idx_produce_location ON produce_lots USING GIST (farm_location);
+CREATE INDEX idx_produce_location ON produce_lots USING GIST (location);
 
 -- 6. Insert Dummy Users
 INSERT INTO users (user_id, full_name, role) 
@@ -53,12 +62,11 @@ VALUES
     ('b_501', 'Green Leaf Restaurant', 'BUYER'),
     ('d_801', 'Ravi Kumar (Driver)', 'DRIVER');
 
--- 7. Insert Dummy Farm Produce (Using ST_SetSRID and ST_MakePoint for Lat/Long)
--- Note: PostGIS uses ST_MakePoint(longitude, latitude) - Longitude comes FIRST!
-INSERT INTO produce_lots (lot_id, farmer_id, crop_name, quantity_kg, quality_grade, price_per_kg, harvest_date, farm_location) 
+-- 7. Insert Dummy Farm Produce
+INSERT INTO produce_lots (lot_id, farmer_id, crop_name, quantity_kg, price_per_kg, location) 
 VALUES 
-    ('lot_901', 'f_101', 'Tomato', 500, 'A', 20.00, '2026-08-28', ST_SetSRID(ST_MakePoint(74.0312, 18.3489), 4326)),
-    ('lot_902', 'f_102', 'Tomato', 300, 'B', 18.00, '2026-08-25', ST_SetSRID(ST_MakePoint(74.0118, 18.3245), 4326)),
-    ('lot_903', 'f_103', 'Onion', 800, 'A', 25.00, '2026-08-30', ST_SetSRID(ST_MakePoint(73.9982, 18.3301), 4326)),
-    ('lot_904', 'f_101', 'Potato', 600, 'B', 15.00, '2026-08-20', ST_SetSRID(ST_MakePoint(74.0255, 18.3510), 4326)),
-    ('lot_905', 'f_102', 'Onion', 400, 'A', 26.00, '2026-09-01', ST_SetSRID(ST_MakePoint(74.0150, 18.3180), 4326));
+    ('lot_901', 'f_101', 'Tomato', 500, 20.00, ST_SetSRID(ST_MakePoint(74.0312, 18.3489), 4326)),
+    ('lot_902', 'f_102', 'Tomato', 300, 18.00, ST_SetSRID(ST_MakePoint(74.0118, 18.3245), 4326)),
+    ('lot_903', 'f_103', 'Onion', 800, 25.00, ST_SetSRID(ST_MakePoint(73.9982, 18.3301), 4326)),
+    ('lot_904', 'f_101', 'Potato', 600, 15.00, ST_SetSRID(ST_MakePoint(74.0255, 18.3510), 4326)),
+    ('lot_905', 'f_102', 'Onion', 400, 26.00, ST_SetSRID(ST_MakePoint(74.0150, 18.3180), 4326));
