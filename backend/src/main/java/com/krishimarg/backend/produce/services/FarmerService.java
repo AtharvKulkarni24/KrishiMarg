@@ -14,17 +14,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class FarmerService {
 
     private final ProduceLotRepository produceLotRepository;
     private final GeometryFactory geometryFactory;
+    private final RestTemplate restTemplate;
 
-    public FarmerService(ProduceLotRepository produceLotRepository) {
+    @Value("${ai.forecast.url:http://localhost:8000/api/v1/forecast}")
+    private String forecastUrl = "http://localhost:8000/api/v1/forecast";
+
+    public FarmerService(ProduceLotRepository produceLotRepository, RestTemplate restTemplate) {
         this.produceLotRepository = produceLotRepository;
         // EPSG:4326 is standard for WGS84 lat/lng
         this.geometryFactory = new GeometryFactory(new PrecisionModel(), 4326);
+        this.restTemplate = restTemplate;
     }
 
     @Transactional
@@ -52,7 +59,7 @@ public class FarmerService {
     }
 
     public Map<String, Object> getInsights() {
-        // Mock data for Mandi rates and Prophet ML forecast
+        // Mock data for Mandi rates and real data for Prophet ML forecast
         Map<String, Object> insights = new HashMap<>();
         
         Map<String, Object> mandiRates = new HashMap<>();
@@ -62,11 +69,23 @@ public class FarmerService {
         insights.put("current_mandi_rates_per_quintal", mandiRates);
 
         Map<String, Object> mlForecast = new HashMap<>();
-        mlForecast.put("Wheat_next_week_trend", "UP");
-        mlForecast.put("Rice_next_week_trend", "STABLE");
-        mlForecast.put("Onion_next_week_trend", "DOWN");
+        String[] crops = {"Wheat", "Rice", "Onion"};
+        
+        for (String crop : crops) {
+            try {
+                String url = forecastUrl + "?crop=" + crop;
+                org.springframework.http.ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+                if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                    mlForecast.put(crop + "_next_week_trend", response.getBody().get("forecast_trend"));
+                } else {
+                    mlForecast.put(crop + "_next_week_trend", "UNKNOWN");
+                }
+            } catch (Exception e) {
+                mlForecast.put(crop + "_next_week_trend", "UNAVAILABLE");
+            }
+        }
+        
         insights.put("prophet_ml_forecast", mlForecast);
-
         return insights;
     }
 }
