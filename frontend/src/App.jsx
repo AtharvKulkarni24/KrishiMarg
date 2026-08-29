@@ -6,6 +6,7 @@ import DemoTourBar from './components/DemoTourBar';
 import FarmerPortal from './components/farmer/FarmerPortal';
 import BuyerMarketplace from './components/buyer/BuyerMarketplace';
 import DriverPortal from './components/driver/DriverPortal';
+import AdminPortal from './components/admin/AdminPortal';
 import NotFoundPage from './components/NotFoundPage';
 import ToastContainer from './components/common/ToastContainer';
 
@@ -30,6 +31,7 @@ export default function App() {
             {activeRole === 'farmer' && <FarmerPortal />}
             {activeRole === 'buyer' && <BuyerMarketplace />}
             {activeRole === 'driver' && <DriverPortal />}
+            {activeRole === 'admin' && <AdminPortal />}
           </main>
           <footer className="border-t border-emerald-900/10 bg-white py-4 px-6 text-center text-xs text-slate-500 w-full">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">

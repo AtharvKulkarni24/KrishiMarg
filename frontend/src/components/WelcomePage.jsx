@@ -2,38 +2,117 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { 
   Sprout, 
-  Store, 
+  ShoppingCart, 
   Truck, 
-  TrendingUp, 
   ShieldCheck, 
-  Compass, 
   ArrowRight, 
   Sparkles, 
-  Layers, 
-  Scale, 
-  MapPin, 
-  Languages 
+  Languages,
+  ChevronRight
 } from 'lucide-react';
 
 export default function WelcomePage() {
-  const { selectRole, setDemoStep, language, toggleLanguage, t } = useApp();
+  const { selectRole, language, toggleLanguage, t } = useApp();
 
-  const handleStartDemoPitch = () => {
-    setDemoStep(1);
-    selectRole('farmer');
-  };
+  const portalCards = [
+    {
+      id: 'farmer',
+      role: 'farmer',
+      icon: Sprout,
+      badge: t('welcome_farmer_badge'),
+      title: t('welcome_farmer_title'),
+      description: t('welcome_farmer_desc'),
+      cta: t('welcome_farmer_btn'),
+      iconBg: 'bg-emerald-50 text-brand-600 group-hover:bg-brand-500 group-hover:text-white',
+      badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
+      btnBg: 'bg-brand-500 hover:bg-brand-600 shadow-brand-500/20 text-white',
+      hoverBorder: 'hover:border-brand-500/60'
+    },
+    {
+      id: 'buyer',
+      role: 'buyer',
+      icon: ShoppingCart,
+      badge: t('welcome_buyer_badge'),
+      title: t('welcome_buyer_title'),
+      description: t('welcome_buyer_desc'),
+      cta: t('welcome_buyer_btn'),
+      iconBg: 'bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white',
+      badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
+      btnBg: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20 text-white',
+      hoverBorder: 'hover:border-emerald-600/60'
+    },
+    {
+      id: 'driver',
+      role: 'driver',
+      icon: Truck,
+      badge: t('welcome_driver_badge'),
+      title: t('welcome_driver_title'),
+      description: t('welcome_driver_desc'),
+      cta: t('welcome_driver_btn'),
+      iconBg: 'bg-emerald-50 text-emerald-800 group-hover:bg-emerald-700 group-hover:text-white',
+      badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200/80',
+      btnBg: 'bg-emerald-700 hover:bg-emerald-800 shadow-emerald-700/20 text-white',
+      hoverBorder: 'hover:border-emerald-700/60'
+    },
+    {
+      id: 'admin',
+      role: 'admin',
+      icon: ShieldCheck,
+      badge: t('welcome_admin_badge'),
+      title: t('welcome_admin_title'),
+      description: t('welcome_admin_desc'),
+      cta: t('welcome_admin_btn'),
+      iconBg: 'bg-teal-50 text-teal-700 group-hover:bg-teal-700 group-hover:text-white',
+      badgeBg: 'bg-teal-50 text-teal-800 border-teal-200/80',
+      btnBg: 'bg-teal-700 hover:bg-teal-800 shadow-teal-700/20 text-white',
+      hoverBorder: 'hover:border-teal-700/60'
+    }
+  ];
+
+  const workflowSteps = [
+    {
+      step: t('step_1_num'),
+      icon: Sprout,
+      title: t('step_1_title'),
+      description: t('step_1_desc'),
+      color: 'text-brand-600 bg-emerald-50'
+    },
+    {
+      step: t('step_2_num'),
+      icon: ShoppingCart,
+      title: t('step_2_title'),
+      description: t('step_2_desc'),
+      color: 'text-emerald-700 bg-emerald-50'
+    },
+    {
+      step: t('step_3_num'),
+      icon: ShieldCheck,
+      title: t('step_3_title'),
+      description: t('step_3_desc'),
+      color: 'text-teal-700 bg-teal-50'
+    },
+    {
+      step: t('step_4_num'),
+      icon: Truck,
+      title: t('step_4_title'),
+      description: t('step_4_desc'),
+      color: 'text-emerald-800 bg-emerald-50'
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-[#f6faf6] text-slate-800 flex flex-col justify-between relative overflow-hidden">
+    <div className="min-h-screen bg-[#f6faf6] text-slate-800 flex flex-col justify-between relative overflow-x-hidden">
       
-      {/* Subtle Background Agricultural Shapes */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-brand-100/40 rounded-full blur-3xl pointer-events-none -z-0" />
-      <div className="absolute bottom-10 left-0 w-80 h-80 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none -z-0" />
+      {/* Background Soft Glows */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-brand-100/35 rounded-full blur-3xl pointer-events-none -z-0" />
+      <div className="absolute bottom-20 left-0 w-80 h-80 bg-emerald-100/30 rounded-full blur-3xl pointer-events-none -z-0" />
 
       {/* Top Header Bar */}
-      <header className="pt-6 px-6 max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-4 z-10">
+      <header className="pt-6 px-4 sm:px-6 max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-4 z-10">
+        
+        {/* Brand Identity */}
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center shadow-md shadow-brand-500/20">
+          <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center shadow-md shadow-brand-500/20 shrink-0">
             <Sprout className="w-7 h-7 text-white" />
           </div>
           <div>
@@ -41,7 +120,7 @@ export default function WelcomePage() {
               <h1 className="text-2xl font-bold font-heading tracking-tight text-emerald-950">
                 Krishi<span className="text-brand-600">Marg</span>
               </h1>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200">
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold border border-emerald-200">
                 {t('brand_sub')}
               </span>
             </div>
@@ -49,18 +128,20 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Right Header Badges: Ministry + Language Toggle */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-emerald-900/10 text-xs text-slate-600 shadow-xs">
+        {/* Right Badges: Ministry Identification + Language Toggle */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-emerald-900/10 text-xs text-slate-600 shadow-xs">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span className="font-semibold text-emerald-950">{t('ministry_badge')}</span>
+            <span className="font-semibold text-emerald-950 text-[11px] sm:text-xs">
+              {t('ministry_badge')}
+            </span>
           </div>
 
-          {/* Language Switcher */}
+          {/* Bilingual Language Switcher Toggle */}
           <button
             onClick={toggleLanguage}
-            title="Switch Language (भाषा बदला)"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400 transition-all cursor-pointer shadow-xs"
+            title={language === 'en' ? "Switch to Marathi (मराठी)" : "Switch to English"}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400 transition-all cursor-pointer shadow-xs active:scale-95 shrink-0"
           >
             <Languages className="w-3.5 h-3.5 text-brand-600" />
             <span>{language === 'en' ? 'EN ⇄ मराठी' : 'मराठी ⇄ EN'}</span>
@@ -68,172 +149,138 @@ export default function WelcomePage() {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-6 py-8 w-full z-10 flex-1 flex flex-col justify-center">
-        {/* Hero Headline */}
-        <div className="text-center max-w-3xl mx-auto mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100/80 border border-emerald-300/80 text-emerald-800 text-xs font-semibold mb-3">
+      {/* Main Content Body */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 md:py-10 w-full z-10 flex-1 flex flex-col justify-center">
+        
+        {/* 1. Hero Section */}
+        <div className="text-center max-w-3xl mx-auto mb-8 md:mb-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-100/80 border border-emerald-300/80 text-emerald-800 text-xs font-semibold mb-3">
             <Sparkles className="w-3.5 h-3.5 text-brand-600" />
             <span>{t('welcome_badge')}</span>
           </div>
 
-          <h2 className="text-3xl md:text-5xl font-extrabold font-heading tracking-tight text-emerald-950 leading-tight">
-            {t('welcome_hero_title_1')} <br />
-            <span className="text-brand-600">
-              {t('welcome_hero_title_2')}
-            </span>
+          {/* Heading 1: Welcome to KrishiMarg */}
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-heading tracking-tight text-emerald-950 leading-tight">
+            {t('welcome_hero_title')}
           </h2>
-          <p className="text-slate-600 text-sm md:text-base mt-3 max-w-2xl mx-auto leading-relaxed font-normal">
-            {t('welcome_hero_sub')}
+
+          {/* Heading 2: Choose how you want to use the platform */}
+          <p className="text-lg sm:text-xl md:text-2xl font-bold font-heading text-brand-600 mt-2">
+            {t('welcome_hero_sub_heading')}
+          </p>
+
+          {/* Subtitle */}
+          <p className="text-slate-600 text-xs sm:text-sm md:text-base mt-2.5 max-w-2xl mx-auto leading-relaxed font-normal">
+            {t('welcome_hero_subtitle')}
           </p>
         </div>
 
-        {/* 3 Main Role Selection Cards (Farmer, Buyer, Driver) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto w-full">
+        {/* 2. Four Portal Cards (2×2 Grid on Desktop, 2 cols on Tablet, 1 col on Mobile) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6 max-w-5xl mx-auto w-full">
+          {portalCards.map((card) => {
+            const Icon = card.icon;
+
+            return (
+              <div 
+                key={card.id}
+                onClick={() => selectRole(card.role)}
+                className={`group relative rounded-2xl p-6 bg-white border border-emerald-900/10 ${card.hoverBorder} transition-all duration-200 cursor-pointer flex flex-col justify-between hover:-translate-y-1 hover:shadow-lg shadow-sm`}
+              >
+                {/* Subtle Role Descriptor Badge */}
+                <div className={`absolute top-4 right-4 text-[10px] font-bold tracking-wide uppercase px-2.5 py-0.5 rounded-full border ${card.badgeBg}`}>
+                  {card.badge}
+                </div>
+
+                <div>
+                  {/* Icon */}
+                  <div className={`w-12 h-12 rounded-xl border border-emerald-200/80 flex items-center justify-center mb-4 transition-all duration-200 shadow-xs ${card.iconBg}`}>
+                    <Icon className="w-6 h-6" />
+                  </div>
+
+                  {/* Role Title */}
+                  <h3 className="text-xl font-bold font-heading text-emerald-950 group-hover:text-brand-700 transition-colors mb-2">
+                    {card.title}
+                  </h3>
+
+                  {/* One-Sentence Description */}
+                  <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mb-6 font-normal">
+                    {card.description}
+                  </p>
+                </div>
+
+                {/* Primary Action CTA Button */}
+                <button 
+                  type="button"
+                  tabIndex={-1}
+                  className={`w-full py-3 px-4 rounded-xl font-bold text-xs transition-all duration-200 flex items-center justify-center gap-2 shadow-sm ${card.btnBg}`}
+                >
+                  <span>{card.cta}</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform duration-200" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 3. How KrishiMarg Works Section */}
+        <div className="mt-12 md:mt-16 max-w-5xl mx-auto w-full pt-8 border-t border-emerald-900/10">
           
-          {/* 1. Farmer Card */}
-          <div 
-            onClick={() => selectRole('farmer')}
-            className="group relative rounded-2xl p-6 bg-white border border-emerald-900/10 hover:border-brand-500 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-brand-500/10"
-          >
-            <div className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-              {t('welcome_farmer_badge')}
-            </div>
-
-            <div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-4 text-brand-600 group-hover:bg-brand-500 group-hover:text-white transition-all duration-300 shadow-xs">
-                <Sprout className="w-6 h-6" />
-              </div>
-
-              <div className="flex items-center gap-1.5 mb-1">
-                <h3 className="text-lg font-bold font-heading text-emerald-950 group-hover:text-brand-700 transition-colors">
-                  {t('welcome_farmer_title')}
-                </h3>
-              </div>
-              <p className="text-slate-600 text-xs leading-relaxed mb-4">
-                {t('welcome_farmer_desc')}
-              </p>
-
-              {/* Feature Highlights */}
-              <ul className="space-y-2.5 border-t border-slate-100 pt-3 mb-5 text-xs text-slate-700">
-                <li className="flex items-center gap-2">
-                  <Scale className="w-3.5 h-3.5 text-brand-600 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_farmer_f1_title')}</strong> {t('welcome_farmer_f1_desc')}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <TrendingUp className="w-3.5 h-3.5 text-brand-600 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_farmer_f2_title')}</strong> {t('welcome_farmer_f2_desc')}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-brand-600 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_farmer_f3_title')}</strong> {t('welcome_farmer_f3_desc')}</span>
-                </li>
-              </ul>
-            </div>
-
-            <button className="w-full py-2.5 px-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm shadow-brand-500/20">
-              <span>{t('welcome_farmer_btn')}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </button>
+          <div className="text-center mb-6 md:mb-8">
+            <h3 className="text-xl sm:text-2xl font-extrabold font-heading text-emerald-950 tracking-tight">
+              {t('how_it_works_title')}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              {t('how_it_works_sub')}
+            </p>
           </div>
 
-          {/* 2. Bulk Buyer Card */}
-          <div 
-            onClick={() => selectRole('buyer')}
-            className="group relative rounded-2xl p-6 bg-white border border-amber-900/10 hover:border-amber-500 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-amber-500/10"
-          >
-            <div className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-              {t('welcome_buyer_badge')}
-            </div>
+          {/* 4-Step Process Grid / Flow */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {workflowSteps.map((step, idx) => {
+              const StepIcon = step.icon;
 
-            <div>
-              <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center mb-4 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all duration-300 shadow-xs">
-                <Store className="w-6 h-6" />
-              </div>
+              return (
+                <div 
+                  key={step.step}
+                  className="bg-white rounded-2xl p-4 border border-emerald-900/10 shadow-xs flex flex-col justify-between relative"
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${step.color} border border-emerald-200/60`}>
+                        <StepIcon className="w-4 h-4" />
+                      </div>
+                      <span className="text-[11px] font-extrabold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 font-heading">
+                        Step {step.step}
+                      </span>
+                    </div>
 
-              <div className="flex items-center gap-1.5 mb-1">
-                <h3 className="text-lg font-bold font-heading text-emerald-950 group-hover:text-amber-700 transition-colors">
-                  {t('welcome_buyer_title')}
-                </h3>
-              </div>
-              <p className="text-slate-600 text-xs leading-relaxed mb-4">
-                {t('welcome_buyer_desc')}
-              </p>
+                    <h4 className="text-sm font-bold font-heading text-emerald-950 mb-1">
+                      {step.title}
+                    </h4>
 
-              {/* Feature Highlights */}
-              <ul className="space-y-2.5 border-t border-slate-100 pt-3 mb-5 text-xs text-slate-700">
-                <li className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_buyer_f1_title')}</strong> {t('welcome_buyer_f1_desc')}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Scale className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_buyer_f2_title')}</strong> {t('welcome_buyer_f2_desc')}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_buyer_f3_title')}</strong> {t('welcome_buyer_f3_desc')}</span>
-                </li>
-              </ul>
-            </div>
+                    <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
+                      {step.description}
+                    </p>
+                  </div>
 
-            <button className="w-full py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm shadow-amber-500/20">
-              <span>{t('welcome_buyer_btn')}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-
-          {/* 3. Driver / Fleet Carrier Card */}
-          <div 
-            onClick={() => selectRole('driver')}
-            className="group relative rounded-2xl p-6 bg-white border border-emerald-900/10 hover:border-emerald-600 transition-all duration-300 cursor-pointer flex flex-col justify-between hover:scale-[1.02] shadow-sm hover:shadow-xl hover:shadow-emerald-600/10"
-          >
-            <div className="absolute top-4 right-4 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-              {t('welcome_driver_badge')}
-            </div>
-
-            <div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-4 text-emerald-700 group-hover:bg-emerald-700 group-hover:text-white transition-all duration-300 shadow-xs">
-                <Truck className="w-6 h-6" />
-              </div>
-
-              <div className="flex items-center gap-1.5 mb-1">
-                <h3 className="text-lg font-bold font-heading text-emerald-950 group-hover:text-emerald-800 transition-colors">
-                  {t('welcome_driver_title')}
-                </h3>
-              </div>
-              <p className="text-slate-600 text-xs leading-relaxed mb-4">
-                {t('welcome_driver_desc')}
-              </p>
-
-              {/* Feature Highlights */}
-              <ul className="space-y-2.5 border-t border-slate-100 pt-3 mb-5 text-xs text-slate-700">
-                <li className="flex items-center gap-2">
-                  <Compass className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_driver_f1_title')}</strong> {t('welcome_driver_f1_desc')}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_driver_f2_title')}</strong> {t('welcome_driver_f2_desc')}</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                  <span className="text-[11px]"><strong>{t('welcome_driver_f3_title')}</strong> {t('welcome_driver_f3_desc')}</span>
-                </li>
-              </ul>
-            </div>
-
-            <button className="w-full py-2.5 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-700/20">
-              <span>{t('welcome_driver_btn')}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </button>
+                  {idx < workflowSteps.length - 1 && (
+                    <div className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 z-20">
+                      <div className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-2xs">
+                        <ChevronRight className="w-3 h-3" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
         </div>
+
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-emerald-900/10 bg-white/70 backdrop-blur-md py-4 px-6 text-center text-xs text-slate-500 w-full z-10">
+      <footer className="border-t border-emerald-900/10 bg-white/70 backdrop-blur-md py-4 px-4 sm:px-6 text-center text-xs text-slate-500 w-full z-10">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span className="font-medium text-emerald-950">
             {t('footer_text')}

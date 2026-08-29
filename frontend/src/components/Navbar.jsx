@@ -4,6 +4,7 @@ import {
   Sprout, 
   Store, 
   Truck, 
+  ShieldCheck,
   Home, 
   Wifi, 
   Languages 
@@ -61,7 +62,7 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* 3 Role Switcher Tabs (Desktop / Tablet) */}
+        {/* 4 Role Switcher Tabs (Desktop / Tablet) */}
         <div className="hidden lg:flex items-center p-1 rounded-xl bg-slate-100/90 border border-slate-200/80 gap-0.5">
           {/* 1. Farmer */}
           <button
@@ -100,6 +101,19 @@ export default function Navbar() {
           >
             <Truck className="w-3.5 h-3.5" />
             <span>{t('nav_driver')}</span>
+          </button>
+
+          {/* 4. Admin */}
+          <button
+            onClick={() => selectRole('admin')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              activeRole === 'admin'
+                ? 'bg-teal-700 text-white shadow-sm'
+                : 'text-slate-600 hover:text-emerald-950 hover:bg-white/70'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>{t('nav_admin')}</span>
           </button>
         </div>
 
@@ -155,8 +169,8 @@ export default function Navbar() {
 
       </div>
 
-      {/* Mobile & Tablet Role Switcher (3 Roles) */}
-      <div className="grid grid-cols-3 lg:hidden items-center pt-2 mt-2 border-t border-slate-100 gap-1 text-center">
+      {/* Mobile & Tablet Role Switcher (4 Roles) */}
+      <div className="grid grid-cols-4 lg:hidden items-center pt-2 mt-2 border-t border-slate-100 gap-1 text-center">
         <button
           onClick={() => selectRole('farmer')}
           className={`py-1.5 text-center text-xs font-semibold rounded-lg ${
@@ -180,6 +194,14 @@ export default function Navbar() {
           }`}
         >
           {t('nav_driver')}
+        </button>
+        <button
+          onClick={() => selectRole('admin')}
+          className={`py-1.5 text-center text-xs font-semibold rounded-lg ${
+            activeRole === 'admin' ? 'bg-teal-50 text-teal-800 font-bold' : 'text-slate-500'
+          }`}
+        >
+          {t('nav_admin')}
         </button>
       </div>
     </header>
