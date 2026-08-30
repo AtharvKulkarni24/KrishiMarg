@@ -552,73 +552,7 @@ export default function BuyerMarketplace() {
         </div>
       </div>
 
-      {/* ⏱️ FEATURE 2: 15-Minute Acceptance Status / Timeout Alert Banner */}
-      {activeBuyerOrder && (
-        <div className={`p-4 rounded-2xl border transition-all shadow-xs ${
-          activeBuyerOrder.acceptance_status === 'TIMEOUT_DELAYED'
-            ? 'bg-amber-50 border-amber-300'
-            : 'bg-blue-50/80 border-blue-200'
-        }`}>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                activeBuyerOrder.acceptance_status === 'TIMEOUT_DELAYED'
-                  ? 'bg-amber-100 text-amber-800'
-                  : 'bg-blue-100 text-blue-800'
-              }`}>
-                {activeBuyerOrder.acceptance_status === 'TIMEOUT_DELAYED' ? (
-                  <AlertTriangle className="w-5 h-5 text-amber-700 animate-bounce" />
-                ) : (
-                  <Clock className="w-5 h-5 text-blue-700 animate-spin" />
-                )}
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-900 text-xs sm:text-sm">
-                    {activeBuyerOrder.acceptance_status === 'TIMEOUT_DELAYED'
-                      ? t('buyer_timeout_delayed_title')
-                      : t('buyer_timeout_waiting')}
-                  </span>
-                  <span className="px-2 py-0.2 rounded-md bg-white border border-slate-200 text-slate-600 font-mono text-[10px] font-bold">
-                    Order #{activeBuyerOrder.order_id}
-                  </span>
-                </div>
-                <p className="text-slate-600 mt-0.5">
-                  {activeBuyerOrder.acceptance_status === 'TIMEOUT_DELAYED'
-                    ? t('buyer_timeout_delayed_desc')
-                    : `Farmer has 15 minutes to confirm. ${acceptanceTimeRemainingStr} remaining.`}
-                </p>
-              </div>
-            </div>
 
-            {/* Action Buttons: Choose Another Farmer OR Simulate Timeout */}
-            <div className="flex items-center gap-2 self-end sm:self-auto">
-              {activeBuyerOrder.acceptance_status === 'TIMEOUT_DELAYED' ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSwitchOrderData({ order_id: activeBuyerOrder.order_id, old_lot_id: activeBuyerOrder.lot_ids?.[0] || 'lot_901', crop_name: 'Tomato' });
-                    setShowSwitchFarmerModal(true);
-                  }}
-                  className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors cursor-pointer shadow-xs"
-                >
-                  {t('buyer_btn_choose_another_farmer')}
-                </button>
-              ) : (
-                /* Demo helper button to test timeout without waiting 15 real mins */
-                <button
-                  type="button"
-                  onClick={() => simulateFarmerTimeout(activeBuyerOrder.order_id)}
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-blue-300 text-blue-900 font-bold text-[11px] transition-colors cursor-pointer shadow-2xs"
-                  title="Test the 15-min timeout flow instantly for demo"
-                >
-                  {t('buyer_simulate_timeout_btn')}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ⭐ FEATURE 4: Post-Delivery Rating Card (if order is delivered) */}
       {activeBuyerOrder && (activeBuyerOrder.status === 'COMPLETED' || activeBuyerOrder.status === 'DELIVERED') && (

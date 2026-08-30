@@ -1,16 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  PlusCircle, 
-  AlertCircle, 
-  ImageIcon, 
-  X, 
-  RotateCcw, 
-  Camera, 
-  Leaf, 
-  Calendar, 
-  Sparkles, 
-  ArrowRight, 
-  CheckCircle2 
+import {
+  PlusCircle,
+  AlertCircle,
+  ImageIcon,
+  X,
+  RotateCcw,
+  Camera,
+  Leaf,
+  Calendar,
+  Sparkles,
+  ArrowRight,
+  CheckCircle2
 } from 'lucide-react';
 import { apiClient } from '../../services/api';
 import { CROP_IMAGES, DEFAULT_CROP_IMAGE } from '../../services/mockData';
@@ -238,9 +238,8 @@ export default function ProduceListingForm({
                   if (formErrors.quantity_kg) setFormErrors(prev => ({ ...prev, quantity_kg: null }));
                 }}
                 placeholder={t('farmer_quantity_placeholder')}
-                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border text-slate-800 text-sm focus:outline-none focus:bg-white transition-colors font-mono ${
-                  formErrors.quantity_kg ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
-                }`}
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border text-slate-800 text-sm focus:outline-none focus:bg-white transition-colors font-mono ${formErrors.quantity_kg ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
+                  }`}
                 required
               />
               {formErrors.quantity_kg && (
@@ -273,9 +272,9 @@ export default function ProduceListingForm({
             {selectedImage ? (
               <div className="space-y-2">
                 <div className="relative rounded-xl overflow-hidden border border-emerald-200 bg-slate-100 h-44 w-full group shadow-xs">
-                  <img 
-                    src={selectedImage} 
-                    alt={formData.crop_name} 
+                  <img
+                    src={selectedImage}
+                    alt={formData.crop_name}
                     className="w-full h-full object-cover"
                   />
                   <button
@@ -361,9 +360,8 @@ export default function ProduceListingForm({
                   if (formErrors.price_per_kg) setFormErrors(prev => ({ ...prev, price_per_kg: null }));
                 }}
                 placeholder={t('farmer_price_placeholder')}
-                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border text-slate-800 text-sm focus:outline-none focus:bg-white transition-colors font-mono ${
-                  formErrors.price_per_kg ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
-                }`}
+                className={`w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border text-slate-800 text-sm focus:outline-none focus:bg-white transition-colors font-mono ${formErrors.price_per_kg ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-slate-200 focus:border-brand-500 focus:ring-1 focus:ring-brand-500'
+                  }`}
                 required
               />
               {formErrors.price_per_kg && (
@@ -399,33 +397,30 @@ export default function ProduceListingForm({
                 <button
                   type="button"
                   onClick={() => handleLocationPreset('saswad')}
-                  className={`text-[11px] px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                    formData.area_preset === 'saswad' 
-                      ? 'bg-brand-600 text-white font-bold shadow-xs' 
+                  className={`text-[11px] px-3 py-1 rounded-lg transition-colors cursor-pointer ${formData.area_preset === 'saswad'
+                      ? 'bg-brand-600 text-white font-bold shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   {t('farmer_preset_saswad')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleLocationPreset('purandar')}
-                  className={`text-[11px] px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                    formData.area_preset === 'purandar' 
-                      ? 'bg-brand-600 text-white font-bold shadow-xs' 
+                  className={`text-[11px] px-3 py-1 rounded-lg transition-colors cursor-pointer ${formData.area_preset === 'purandar'
+                      ? 'bg-brand-600 text-white font-bold shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   {t('farmer_preset_purandar')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleLocationPreset('jejuri')}
-                  className={`text-[11px] px-3 py-1 rounded-lg transition-colors cursor-pointer ${
-                    formData.area_preset === 'jejuri' 
-                      ? 'bg-brand-600 text-white font-bold shadow-xs' 
+                  className={`text-[11px] px-3 py-1 rounded-lg transition-colors cursor-pointer ${formData.area_preset === 'jejuri'
+                      ? 'bg-brand-600 text-white font-bold shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                    }`}
                 >
                   {t('farmer_preset_jejuri')}
                 </button>

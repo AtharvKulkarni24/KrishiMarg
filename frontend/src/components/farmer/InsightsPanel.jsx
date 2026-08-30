@@ -10,6 +10,7 @@ import {
   AreaChart 
 } from 'recharts';
 import { useApp } from '../../context/AppContext';
+import { MOCK_INSIGHTS } from '../../services/mockData';
 
 export default function InsightsPanel({ 
   isLoadingInsights, 
@@ -30,9 +31,14 @@ export default function InsightsPanel({
             <p className="text-[11px] text-slate-500">{t('farmer_ai_forecast_sub')}</p>
           </div>
         </div>
-        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold">
-          {t('farmer_7day_horizon')}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-800 border border-indigo-200 font-bold">
+            Mock Data
+          </span>
+          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+            {t('farmer_7day_horizon')}
+          </span>
+        </div>
       </div>
 
       {/* Price Forecast Chart */}
@@ -42,10 +48,10 @@ export default function InsightsPanel({
             <div className="w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
             <span>{t('farmer_loading_forecast')}</span>
           </div>
-        ) : insightsData?.ml_7_day_forecast ? (
+        ) : (MOCK_INSIGHTS[cropName]?.ml_7_day_forecast || MOCK_INSIGHTS['Tomato'].ml_7_day_forecast) ? (
           <>
             <ResponsiveContainer width="100%" height="90%">
-              <AreaChart data={insightsData.ml_7_day_forecast}>
+              <AreaChart data={MOCK_INSIGHTS[cropName]?.ml_7_day_forecast || MOCK_INSIGHTS['Tomato'].ml_7_day_forecast}>
                 <defs>
                   <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#0caf3d" stopOpacity={0.3}/>
